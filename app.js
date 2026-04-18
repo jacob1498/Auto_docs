@@ -41,7 +41,7 @@ loginForm.addEventListener('submit', async (e) => {
     const password = document.getElementById('login-password').value;
 
     btn.disabled = true;
-    btn.innerText = "Signing In...";
+    btn.innerHTML = '<div class="spinner"></div> Signing In...';
 
     try {
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -67,7 +67,7 @@ signupForm.addEventListener('submit', async (e) => {
     }
 
     btn.disabled = true;
-    btn.innerText = "Creating Account...";
+    btn.innerHTML = '<div class="spinner"></div> Creating Account...';
 
     try {
         const { data, error } = await supabaseClient.auth.signUp({ 
