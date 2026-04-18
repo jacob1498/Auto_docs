@@ -6,6 +6,7 @@
     <title>DocTrack | Document Monitoring</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -41,13 +42,25 @@
     </div>
 
     <div id="app-container" class="hidden">
-        <aside id="sidebar">
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-brand">DocTrack</div>
             <nav class="side-nav">
-                <a href="#" class="nav-item active">Dashboard</a>
-                <a href="#" class="nav-item">My Documents</a>
-                <a href="#" class="nav-item">Reports</a>
-                <a href="#" class="nav-item">Settings</a>
+                <a href="#" class="nav-item active">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">description</span>
+                    My Documents
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
             </nav>
             <div class="sidebar-user">
                 <p id="user-display"></p>
@@ -56,14 +69,50 @@
         </aside>
 
         <div class="main-wrapper">
+            <header class="mobile-header">
+                <button id="sidebar-toggle" class="icon-btn">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="mobile-brand">DocTrack</div>
+            </header>
             <main>
+                <div class="top-bar">
+                    <div class="search-box">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" id="dashboard-search" placeholder="Search documents...">
+                        <button id="clear-search" class="clear-btn hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="sort-box">
+                        <select id="sort-date">
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                    <div class="filter-box">
+                        <select id="filter-status">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                        </select>
+                    </div>
+                    <button id="reset-filters" class="reset-btn" title="Reset all filters">
+                        <span class="material-symbols-outlined">restart_alt</span>
+                        Reset
+                    </button>
+                </div>
+
+                <div id="no-results" class="hidden">
+                    <span class="material-symbols-outlined">search_off</span>
+                    <p>No documents found matching your search.</p>
+                </div>
+
                 <!-- Admin View -->
                 <section id="admin-view" class="role-view hidden">
                     <h1>Admin Dashboard</h1>
-            <!-- Admin View -->
-            <section id="admin-view" class="role-view hidden">
-                <h1>Admin Dashboard</h1>
-                <div class="stats-bar">All Documents Monitoring</div>
+                    <div class="stats-bar">All Documents Monitoring</div>
+
                 <table id="admin-doc-table">
                     <thead>
                         <tr>
@@ -76,7 +125,13 @@
                     <tbody></tbody>
                 </table>
             </section>
-                <button id="upload-trigger">Upload New Document</button>
+
+            <!-- Client View -->
+            <section id="client-view" class="role-view hidden">
+                <h1>My Documents</h1>
+                <button id="upload-trigger" class="fab" title="Add New Document">
+                    <span class="material-symbols-outlined">add</span>
+                </button>
                 <div id="client-doc-list" class="grid-list">
                     <!-- Document cards will go here -->
                 </div>
@@ -86,6 +141,44 @@
                 <p>&copy; 2024 DocTrack | Document Monitoring System. All rights reserved.</p>
             </footer>
         </div>
+    </div>
+
+    <!-- Modal for Adding Document -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Add Document</h2>
+            <form id="add-doc-form">
+                <div class="field-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="doc-title-input">Document Title</label>
+                        <span id="char-counter" class="char-counter">0 / 50</span>
+                    </div>
+                    <input type="text" id="doc-title-input" placeholder="Enter document name..." required minlength="3" maxlength="50">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-modal" class="auth-btn cancel-btn">Cancel</button>
+                    <button type="submit" class="auth-btn">Create Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Deletion Confirmation -->
+    <div id="confirm-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Confirm Deletion</h2>
+            <p style="text-align: center; color: var(--gray-600); margin-bottom: 2rem;">Are you sure you want to delete this document? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancel-delete-btn" class="auth-btn cancel-btn">Cancel</button>
+                <button type="button" id="confirm-delete-btn" class="auth-btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span id="toast-message"></span>
     </div>
 
     <script src="app.js" type="module"></script>
