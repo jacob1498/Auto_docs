@@ -41,12 +41,25 @@
     </div>
 
     <div id="app-container" class="hidden">
-        <nav>
-            <span id="user-display"></span>
-            <button id="logout-btn">Logout</button>
-        </nav>
+        <aside id="sidebar">
+            <div class="sidebar-brand">DocTrack</div>
+            <nav class="side-nav">
+                <a href="#" class="nav-item active">Dashboard</a>
+                <a href="#" class="nav-item">My Documents</a>
+                <a href="#" class="nav-item">Reports</a>
+                <a href="#" class="nav-item">Settings</a>
+            </nav>
+            <div class="sidebar-user">
+                <p id="user-display"></p>
+                <button id="logout-btn" class="logout-btn-alt">Logout</button>
+            </div>
+        </aside>
 
-        <main>
+        <div class="main-wrapper">
+            <main>
+                <!-- Admin View -->
+                <section id="admin-view" class="role-view hidden">
+                    <h1>Admin Dashboard</h1>
             <!-- Admin View -->
             <section id="admin-view" class="role-view hidden">
                 <h1>Admin Dashboard</h1>
@@ -63,16 +76,16 @@
                     <tbody></tbody>
                 </table>
             </section>
-
-            <!-- Client View -->
-            <section id="client-view" class="role-view hidden">
-                <h1>My Documents</h1>
                 <button id="upload-trigger">Upload New Document</button>
                 <div id="client-doc-list" class="grid-list">
                     <!-- Document cards will go here -->
                 </div>
             </section>
-        </main>
+            </main>
+            <footer>
+                <p>&copy; 2024 DocTrack | Document Monitoring System. All rights reserved.</p>
+            </footer>
+        </div>
     </div>
 
     <script src="app.js" type="module"></script>
