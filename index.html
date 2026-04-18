@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocTrack | Document Monitoring</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="auth-container">
+        <!-- Login View -->
+        <section id="login-view" class="card">
+            <h2>Login</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+            <p class="toggle-msg">Don't have an account? <span class="toggle-link" id="go-to-signup">Sign Up</span></p>
+        </section>
+
+        <!-- Sign Up View -->
+        <section id="signup-view" class="card hidden">
+            <h2>Create Account</h2>
+            <form id="signup-form">
+                <input type="email" id="signup-email" placeholder="Email" required>
+                <input type="password" id="signup-password" placeholder="Password" required>
+                <div class="field-group">
+                    <label>Register as:</label>
+                    <select id="signup-role">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="auth-btn">Sign Up</button>
+            </form>
+            <p class="toggle-msg">Already have an account? <span class="toggle-link" id="go-to-login">Login</span></p>
+        </section>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <nav>
+            <span id="user-display"></span>
+            <button id="logout-btn">Logout</button>
+        </nav>
+
+        <main>
+            <!-- Admin View -->
+            <section id="admin-view" class="role-view hidden">
+                <h1>Admin Dashboard</h1>
+                <div class="stats-bar">All Documents Monitoring</div>
+                <table id="admin-doc-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <!-- Client View -->
+            <section id="client-view" class="role-view hidden">
+                <h1>My Documents</h1>
+                <button id="upload-trigger">Upload New Document</button>
+                <div id="client-doc-list" class="grid-list">
+                    <!-- Document cards will go here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js" type="module"></script>
+</body>
+</html>
