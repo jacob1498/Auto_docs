@@ -20,9 +20,6 @@ body {
     font-family: 'Inter', sans-serif;
     background: var(--bg-gradient);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     color: var(--gray-900);
 }
 
@@ -31,9 +28,11 @@ body {
 }
 
 #auth-container {
-    width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
     padding: 1rem;
 }
 
@@ -162,4 +161,92 @@ input:focus, select:focus {
 
 .toggle-link:hover {
     text-decoration: underline;
+}
+
+/* Dashboard Layout */
+#app-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+#sidebar {
+    width: 280px;
+    background: rgba(17, 24, 39, 0.4);
+    backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    color: white;
+    padding: 2rem 0;
+}
+
+.sidebar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 0 2rem 2rem 2rem;
+    letter-spacing: -0.025em;
+}
+
+.side-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nav-item {
+    padding: 0.75rem 2rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    transition: all 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.sidebar-user {
+    padding: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#user-display {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 1rem;
+    word-break: break-all;
+}
+
+.logout-btn-alt {
+    width: 100%;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--gray-50);
+}
+
+main {
+    flex: 1;
+    padding: 2.5rem;
+}
+
+footer {
+    padding: 1.5rem 2.5rem;
+    background: white;
+    border-top: 1px solid var(--gray-200);
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--gray-600);
 }
