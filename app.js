@@ -598,12 +598,12 @@ async function renderAdminDashboard() {
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
 
-    if (currentAdminTab === 'completed') {
-        query = query.eq('final_status', 'Completed');
-    } else if (currentAdminTab === 'submitted') {
+    if (currentAdminTab === 'submitted') {
         query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
     } else if (currentAdminTab === 'returned') {
         query = query.eq('status', 'Revised').neq('final_status', 'Completed');
+    } else if (currentAdminTab === 'completed') {
+        query = query.eq('final_status', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -661,7 +661,14 @@ async function renderAdminDashboard() {
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Received"><span class="material-symbols-outlined">check_circle</span></button>
+                    <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
+                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        <span class="material-symbols-outlined">check_circle</span>
+                    </button>
+                    <button class="icon-btn" onclick="returnToClient('${doc.id}')" title="Return to Client"
+                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        <span class="material-symbols-outlined">assignment_return</span>
+                    </button>
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
@@ -756,14 +763,16 @@ async function renderClientDashboard(userId) {
 // Global function for admin actions
 window.updateStatus = async (id, status) => {
     try {
-        const { error } = await supabaseClient
+        const { error: updateError } = await supabaseClient
             .from('documents')
             .update({ status, updated_at: new Date().toISOString() })
             .eq('id', id);
         
-        if (error) throw error;
+        if (updateError) throw updateError;
 
-        showToast(`Status updated to: ${status}`);
+        // Show the toast immediately for feedback
+        showToast(`Status updated: ${status}`);
+        
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) showApp(session.user);
     } catch (err) {
@@ -772,8 +781,12 @@ window.updateStatus = async (id, status) => {
 };
 
 window.submitToAdmin = async (id) => {
-    if(!confirm("Are you sure you want to submit this document for review?")) return;
+    if (!confirm("Are you sure you want to submit this document for review?")) return;
+    
+    // 1. Force state to 'submitted' first
     currentClientTab = 'submitted';
+    
+    // 2. Update status and trigger re-render
     await updateStatus(id, 'Adjusted - for Routing');
 };
 
@@ -782,9 +795,8 @@ window.receiveDocument = async (id) => {
     await updateFinalStatus(id, 'Completed');
 };
 
-// New function for Admin to return document to Client
 window.returnToClient = async (id) => {
-    if(!confirm("Return this document to the client for revision?")) return;
+    if (!confirm("Return this document to the client for revision?")) return;
     currentAdminTab = 'returned';
     await updateStatus(id, 'Revised');
 };
@@ -793,15 +805,26 @@ window.updateFinalStatus = async (id, final_status) => {
     try {
         const { error } = await supabaseClient
             .from('documents')
-            .update({ final_status, updated_at: new Date().toISOString() })
+            .update({ 
+                final_status, 
+                updated_at: new Date().toISOString() 
+            })
             .eq('id', id);
         
         if (error) throw error;
 
         showToast(`Final Status: ${final_status}`);
+        
+        // Sync tab view based on action
+        if (final_status === 'Completed') {
+            if (currentUserRole === 'admin') currentAdminTab = 'completed';
+            else currentClientTab = 'completed';
+        }
+
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) showApp(session.user);
     } catch (err) {
-        alert("Status update failed: " + err.message);
+        console.error("Status update failed:", err);
+        alert("Update failed: " + err.message);
     }
 };
