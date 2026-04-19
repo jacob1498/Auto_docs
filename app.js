@@ -699,8 +699,9 @@ async function renderClientDashboard(userId) {
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
-        // Show Submit button only if status includes 'Routing' and it's currently in Pending state
-        const canSubmit = doc.status.includes('Routing') && doc.final_status === 'Pending';
+        // Show Submit button only if status includes 'Routing' and it's currently in Pending state (not yet submitted)
+        const statusText = doc.status || '';
+        const canSubmit = statusText.includes('Routing') && (doc.final_status === 'Pending' || !doc.final_status);
         const submitBtnHtml = canSubmit ? `
             <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
                 <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--primary)">send</span>
@@ -724,7 +725,7 @@ async function renderClientDashboard(userId) {
                     <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
             </td>
-            <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
+            <td><span class="badge ${doc.final_status || 'Pending'}">${doc.final_status === 'Submitted' ? 'Pending-Submitted' : (doc.final_status || 'Pending')}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
@@ -752,6 +753,8 @@ window.updateStatus = async (id, status) => {
         // Clear cached role on status update to ensure UI remains synced
         currentUserRole = null; 
         showApp(user);
+    } else {
+        alert("Failed to update status: " + error.message);
     }
 };
 
@@ -770,6 +773,8 @@ window.submitToAdmin = async (id) => {
         const { data: { user } } = await supabaseClient.auth.getUser();
         currentUserRole = null; 
         showApp(user);
+    } else {
+        alert("Failed to submit document: " + error.message);
     }
 };
 
@@ -787,5 +792,7 @@ window.updateFinalStatus = async (id, final_status) => {
         showToast(`Final Status: ${final_status}`);
         const { data: { user } } = await supabaseClient.auth.getUser();
         showApp(user);
+    } else {
+        alert("Failed to update final status: " + error.message);
     }
 };
