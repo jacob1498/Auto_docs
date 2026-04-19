@@ -200,8 +200,9 @@ input:focus, select:focus {
 /* Dashboard Layout */
 #app-container {
     display: flex;
-    min-height: 100vh;
+    height: 100vh; /* Lock height to window screen */
     width: 100%;
+    overflow: hidden; /* Prevent window-level scroll */
 }
 
 .sidebar {
@@ -214,6 +215,7 @@ input:focus, select:focus {
     padding: 2rem 0;
     transition: transform 0.3s ease;
     z-index: 1000;
+    height: 100vh;
 }
 
 .sidebar-brand {
@@ -568,6 +570,7 @@ tr:hover {
     flex-direction: column;
     background-color: var(--gray-50);
     min-width: 0; /* Prevents flex items from overflowing */
+    height: 100vh;
 }
 
 .top-bar {
@@ -1044,7 +1047,8 @@ textarea#doc-title-input:focus {
 
 main {
     flex: 1;
-    padding: 2.5rem;
+    padding: 2rem 2.5rem;
+    overflow-y: auto; /* Content area scrolls independently */
 }
 
 footer {
