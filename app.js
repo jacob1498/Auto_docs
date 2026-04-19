@@ -919,8 +919,11 @@ window.updateStatus = async (id, status, customMsg = null) => {
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
     
-    // Perform the update and refresh the current view. 
-    // We remain in the current tab as requested to avoid logic conflicts.
+    // Update the state variables so the dashboard knows to render the 'submitted' tab
+    // and reset the page index to 0.
+    currentClientTab = 'submitted';
+    currentClientPage = 0;
+
     await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
 };
 
