@@ -778,7 +778,10 @@ async function renderClientDashboard(userId) {
     } else if (currentClientTab === 'returned') {
         query = query.eq('status', 'Revised');
     } else { // active
-        query = query.not('status', 'in', ['Submitted', 'Completed', 'Revised']);
+        // Using multiple neq calls is more robust than 'not.in' for PostgREST parsing
+        query = query.neq('status', 'Submitted')
+                     .neq('status', 'Completed')
+                     .neq('status', 'Revised');
     }
 
     const from = currentClientPage * PAGE_SIZE;
@@ -890,7 +893,9 @@ window.updateStatus = async (id, status, customMsg = null) => {
         // Targeted refresh instead of full app reset
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (user) {
-            if (currentUserRole === 'admin') {
+            // Use metadata as fallback if local role variable is not set
+            const role = currentUserRole || user.user_metadata?.role;
+            if (role === 'admin') {
                 await renderAdminDashboard();
             } else {
                 await renderClientDashboard(user.id);
