@@ -134,6 +134,46 @@
                     </div>
                 </section>
 
+                <!-- Reports & Analytics View -->
+                <section id="reports-view" class="role-view hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h1 style="margin: 0;">Analytics Reports</h1>
+                        <button id="export-reports-btn" class="auth-btn" style="width: auto; padding: 0.6rem 1.25rem; background-color: var(--gray-900);">
+                            <span class="material-symbols-outlined">download</span>
+                            Export CSV
+                        </button>
+                    </div>
+                    <div class="grid-list">
+                        <div class="doc-card" style="flex-direction: column; align-items: flex-start;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Volume by Category</h3>
+                            <div id="category-distribution-chart" style="width: 100%;">
+                                <!-- Chart injected by JS -->
+                            </div>
+                        </div>
+                        <div class="doc-card" style="flex-direction: column; align-items: flex-start;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Avg. Aging by Category</h3>
+                            <div id="aging-distribution-chart" style="width: 100%;">
+                                <!-- Chart injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="margin-top: 2rem;">
+                        <table id="monthly-summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Period (Month)</th>
+                                    <th style="text-align: center;">Total Docs</th>
+                                    <th style="text-align: center;">IAAF</th>
+                                    <th style="text-align: center;">IR</th>
+                                    <th style="text-align: center;">Completion Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
                 <!-- Admin View -->
                 <section id="admin-view" class="role-view documents-content hidden">
                     <h1>Admin Dashboard</h1>

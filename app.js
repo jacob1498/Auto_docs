@@ -22,12 +22,22 @@ let currentClientPage = 0;
 let currentSearchTerm = '';
 let currentSidebarView = 'documents'; // Default view
 const PAGE_SIZE = 10;
+let monthlyGroupsCache = {}; // Store report data for export
 let realtimeSubscription = null;
+
+// Helper to synchronize search UI and state
+function clearSearchUI() {
+    currentSearchTerm = '';
+    document.querySelectorAll('.dashboard-search').forEach(input => input.value = '');
+    document.querySelectorAll('.clear-search-btn').forEach(btn => btn.classList.add('hidden'));
+    document.getElementById('no-results')?.classList.add('hidden');
+}
 
 // Tab Switching Logic
 window.switchClientTab = async (tab) => {
     currentClientTab = tab;
     currentClientPage = 0; // Reset to first page
+    clearSearchUI(); // Ensure fresh state on tab change
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderClientDashboard(session.user.id);
@@ -37,6 +47,7 @@ window.switchAdminTab = async (tab) => {
     currentAdminTab = tab;
     currentAdminPage = 0; // Reset to first page
     currentAdminAgingFilter = null; // Clear aging filter when manually switching tabs
+    clearSearchUI(); // Ensure fresh state on tab change
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderAdminDashboard();
@@ -45,6 +56,7 @@ window.switchAdminTab = async (tab) => {
 // Sidebar Navigation Switching
 async function switchSidebarView(viewName) {
     currentSidebarView = viewName;
+    if (viewName === 'dashboard') clearSearchUI();
     
     // Update Active Nav State
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -53,14 +65,22 @@ async function switchSidebarView(viewName) {
 
     // Toggle Content Views
     const statsView = document.getElementById('stats-view');
+    const reportsView = document.getElementById('reports-view');
     const docViews = document.querySelectorAll('.documents-content');
     
     if (viewName === 'dashboard') {
         statsView.classList.remove('hidden');
+        reportsView.classList.add('hidden');
         docViews.forEach(v => v.classList.add('hidden'));
         await updateStatsDashboard();
+    } else if (viewName === 'reports') {
+        statsView.classList.add('hidden');
+        reportsView.classList.remove('hidden');
+        docViews.forEach(v => v.classList.add('hidden'));
+        await renderReportsView();
     } else if (viewName === 'documents') {
         statsView.classList.add('hidden');
+        reportsView.classList.add('hidden');
         // The actual role-based rendering happens in showApp or re-renders
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -79,6 +99,8 @@ async function switchSidebarView(viewName) {
 
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
+document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
+document.getElementById('export-reports-btn')?.addEventListener('click', () => window.exportReportsToCSV());
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -101,7 +123,9 @@ let searchTimeout;
 document.addEventListener('input', (e) => {
     if (!e.target.classList.contains('dashboard-search')) return;
     
-    const term = e.target.value.trim();
+    // Sanitize input to prevent breaking Supabase .or() syntax
+    // We escape commas as they are used as delimiters in the query string
+    const term = e.target.value.trim().replace(/,/g, '');
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
         currentSearchTerm = term;
@@ -111,12 +135,16 @@ document.addEventListener('input', (e) => {
         const clearBtn = e.target.parentElement.querySelector('.clear-search-btn');
         if (clearBtn) clearBtn.classList.toggle('hidden', term === '');
 
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            if (currentUserRole === 'admin') {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const user = sessionData?.session?.user;
+        
+        if (user) {
+            // Use metadata fallback to ensure Admins don't get kicked to the Client view during search
+            const role = currentUserRole || user.user_metadata?.role;
+            if (role === 'admin') {
                 await renderAdminDashboard();
             } else {
-                await renderClientDashboard(session.user.id);
+                await renderClientDashboard(user.id);
             }
         }
     }, 400);
@@ -670,6 +698,111 @@ async function updateStatsDashboard() {
     }
 }
 
+async function renderReportsView() {
+    const { data: docs, error } = await supabaseClient
+        .from('documents')
+        .select('category, status, created_at, period');
+    
+    if (error || !docs) return;
+
+    // 1. Category Distribution
+    const iaafCount = docs.filter(d => d.category === 'IAAF').length;
+    const irCount = docs.filter(d => d.category === 'IR').length;
+    const maxVal = Math.max(iaafCount, irCount, 1);
+
+    document.getElementById('category-distribution-chart').innerHTML = `
+        <div class="chart-row">
+            <span class="chart-label">IAAF</span>
+            <div class="chart-track"><div class="chart-fill" style="width: ${(iaafCount/maxVal)*100}%; background: #be185d;"></div></div>
+            <span class="chart-label" style="text-align:left; width: 30px;">${iaafCount}</span>
+        </div>
+        <div class="chart-row">
+            <span class="chart-label">IR</span>
+            <div class="chart-track"><div class="chart-fill" style="width: ${(irCount/maxVal)*100}%; background: #0369a1;"></div></div>
+            <span class="chart-label" style="text-align:left; width: 30px;">${irCount}</span>
+        </div>
+    `;
+
+    // 2. Average Aging by Category
+    const calcAvgAging = (category) => {
+        const group = docs.filter(d => d.category === category);
+        if (group.length === 0) return 0;
+        const sum = group.reduce((acc, d) => acc + calculateAging(d.created_at), 0);
+        return (sum / group.length).toFixed(1);
+    };
+
+    const iaafAging = calcAvgAging('IAAF');
+    const irAging = calcAvgAging('IR');
+    const maxAging = Math.max(iaafAging, irAging, 1);
+
+    document.getElementById('aging-distribution-chart').innerHTML = `
+        <div class="chart-row">
+            <span class="chart-label">IAAF</span>
+            <div class="chart-track"><div class="chart-fill" style="width: ${(iaafAging/maxAging)*100}%; background: #be185d;"></div></div>
+            <span class="chart-label" style="text-align:left; width: 50px;">${iaafAging}d</span>
+        </div>
+        <div class="chart-row">
+            <span class="chart-label">IR</span>
+            <div class="chart-track"><div class="chart-fill" style="width: ${(irAging/maxAging)*100}%; background: #0369a1;"></div></div>
+            <span class="chart-label" style="text-align:left; width: 50px;">${irAging}d</span>
+        </div>
+    `;
+
+    // 3. Monthly Summary Table
+    const monthlyTableBody = document.querySelector('#monthly-summary-table tbody');
+    const monthlyGroups = docs.reduce((acc, d) => {
+        const month = d.period || 'Unknown';
+        if (!acc[month]) acc[month] = { total: 0, iaaf: 0, ir: 0, completed: 0 };
+        acc[month].total++;
+        if (d.category === 'IAAF') acc[month].iaaf++;
+        if (d.category === 'IR') acc[month].ir++;
+        if (d.status === 'Completed') acc[month].completed++;
+        return acc;
+    }, {});
+    monthlyGroupsCache = monthlyGroups; // Cache for export
+
+    monthlyTableBody.innerHTML = Object.entries(monthlyGroups)
+        .sort((a, b) => b[0].localeCompare(a[0])) // Sort by period descending
+        .map(([month, data]) => {
+            const rate = ((data.completed / data.total) * 100).toFixed(0);
+            return `
+                <tr>
+                    <td style="font-weight: 600;">${month}</td>
+                    <td style="text-align: center;">${data.total}</td>
+                    <td style="text-align: center;">${data.iaaf}</td>
+                    <td style="text-align: center;">${data.ir}</td>
+                    <td style="text-align: center;">
+                        <span class="badge" style="background: var(--gray-100); color: var(--gray-900);">${rate}% Done</span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+}
+
+window.exportReportsToCSV = () => {
+    if (!monthlyGroupsCache || Object.keys(monthlyGroupsCache).length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Period,Total Docs,IAAF,IR,Completion Rate\n";
+    
+    Object.entries(monthlyGroupsCache)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .forEach(([month, data]) => {
+            const rate = ((data.completed / data.total) * 100).toFixed(0) + "%";
+            csvContent += `${month},${data.total},${data.iaaf},${data.ir},${rate}\n`;
+        });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `DocTrack_Monthly_Summary_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 // Realtime Subscription Logic
 function initRealtimeSubscription(user) {
     if (realtimeSubscription) return;
@@ -820,10 +953,16 @@ async function renderAdminDashboard() {
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
         const filterLabel = currentAdminAgingFilter ? ` | Aging: ${currentAdminAgingFilter}` : '';
-        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel} | Total: ${count || 0}`;
+        const searchLabel = currentSearchTerm ? ` | Search: "${currentSearchTerm}"` : '';
+        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${searchLabel} | Total: ${count || 0}`;
     }
 
-    tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
+    const hasDocs = docs && docs.length > 0;
+    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs);
+    document.querySelector('#admin-view .table-container')?.classList.toggle('hidden', !hasDocs);
+    document.getElementById('admin-pagination')?.classList.toggle('hidden', !hasDocs);
+
+    tbody.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
@@ -855,7 +994,7 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>
-    `}).join('') : '<tr><td colspan="8" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
+    `}).join('') : '';
 
     renderPagination(count, currentAdminPage, 'admin');
 }
@@ -920,16 +1059,13 @@ async function renderClientDashboard(userId) {
         return;
     }
 
+    const hasDocs = docs && docs.length > 0;
     // Toggle global no-results display if no records match
-    const noResults = document.getElementById('no-results');
-    if (noResults) noResults.classList.toggle('hidden', docs && docs.length > 0);
+    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs);
+    document.querySelector('#client-view .table-container')?.classList.toggle('hidden', !hasDocs);
+    document.getElementById('client-pagination')?.classList.toggle('hidden', !hasDocs);
 
-    if (!docs || docs.length === 0) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
-        return;
-    }
-
-    container.innerHTML = docs.map(doc => {
+    container.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
@@ -960,7 +1096,7 @@ async function renderClientDashboard(userId) {
                 </div>
             </td>
         </tr>
-    `}).join('');
+    `}).join('') : '';
 
     renderPagination(count, currentClientPage, 'client');
 }
