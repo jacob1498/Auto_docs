@@ -366,8 +366,10 @@ addDocForm?.addEventListener('submit', async (e) => {
         if (!editingId) {
             if (initialStatus === 'Submitted') {
                 currentClientTab = 'submitted';
+                currentClientPage = 0;
             } else {
                 currentClientTab = 'active';
+                currentClientPage = 0;
             }
         }
 
@@ -898,17 +900,20 @@ window.updateStatus = async (id, status, customMsg = null) => {
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
     currentClientTab = 'submitted'; // Switch UI tab before update triggers re-render
+    currentClientPage = 0; // Reset to first page
     await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
 };
 
 window.receiveDocument = async (id) => {
     if (!confirm("Mark this document as Completed?")) return;
     currentAdminTab = 'completed'; // Switch UI tab before update triggers re-render
+    currentAdminPage = 0; // Reset to first page
     await updateStatus(id, 'Completed');
 };
 
 window.returnToClient = async (id) => {
     if (!confirm("Return this document to the client for revision?")) return;
     currentAdminTab = 'returned'; // Switch UI tab before update triggers re-render
+    currentAdminPage = 0; // Reset to first page
     await updateStatus(id, 'Revised', 'Returned to client for revision');
 };
