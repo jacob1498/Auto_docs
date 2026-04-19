@@ -2,10 +2,11 @@
     --primary: #6366f1;
     --primary-dark: #4f46e5;
     --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --bg-main: #f8fafc;
     --white: #ffffff;
     --gray-50: #f9fafb;
     --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
+    --gray-200: #f1f5f9;
     --gray-600: #4b5563;
     --gray-900: #111827;
     --success: #10b981;
@@ -13,7 +14,7 @@
     --danger: #ef4444;
     --info: #3b82f6;
     --pending: #6366f1;
-    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 * {
@@ -23,7 +24,7 @@
 body {
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background: var(--bg-gradient);
+    background: var(--bg-main);
     min-height: 100vh;
     color: var(--gray-900);
 }
@@ -190,12 +191,11 @@ input:focus, select:focus {
 
 .sidebar {
     width: 280px;
-    background: rgba(17, 24, 39, 0.4);
-    backdrop-filter: blur(12px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--white);
+    border-right: 1px solid var(--gray-200);
     display: flex;
     flex-direction: column;
-    color: white;
+    color: var(--gray-900);
     padding: 2rem 0;
     transition: transform 0.3s ease;
     z-index: 1000;
@@ -206,6 +206,7 @@ input:focus, select:focus {
     font-weight: 700;
     padding: 0 2rem 2rem 2rem;
     letter-spacing: -0.025em;
+    color: var(--primary);
 }
 
 .side-nav {
@@ -217,7 +218,7 @@ input:focus, select:focus {
 
 .nav-item {
     padding: 0.75rem 2rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--gray-600);
     text-decoration: none;
     font-size: 0.9375rem;
     transition: all 0.2s;
@@ -232,18 +233,18 @@ input:focus, select:focus {
 }
 
 .nav-item:hover, .nav-item.active {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--gray-50);
+    color: var(--primary);
 }
 
 .sidebar-user {
     padding: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--gray-100);
 }
 
 #user-display {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--gray-400);
     margin-bottom: 1rem;
     word-break: break-all;
 }
@@ -251,9 +252,9 @@ input:focus, select:focus {
 .logout-btn-alt {
     width: 100%;
     padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-600);
     border-radius: 0.5rem;
     cursor: pointer;
 }
@@ -278,7 +279,7 @@ table {
 }
 
 thead {
-    background-color: #f8fafc;
+    background-color: var(--gray-50);
     border-bottom: 2px solid var(--gray-200);
     z-index: 10;
     position: sticky;
@@ -286,7 +287,7 @@ thead {
 }
 
 th {
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.25rem;
     font-weight: 600;
     color: var(--gray-900);
     text-transform: uppercase;
@@ -295,15 +296,13 @@ th {
     white-space: nowrap;
     position: sticky;
     top: 0;
-    border-right: 1px solid var(--gray-200);
 }
 
 td {
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
     color: var(--gray-900);
-    border-right: 1px solid var(--gray-200);
     line-height: 1.4;
 }
 
@@ -314,13 +313,18 @@ tr:last-child td {
 }
 
 tr:nth-child(even) {
-    background-color: #fcfcfd; /* Zebra striping */
+    background-color: var(--gray-50); 
+}
+
+tr:hover {
+    background-color: #f8fafc !important;
 }
 
 /* Matrix styles */
 #owner-status-matrix td:not(:first-child) {
     text-align: center;
-    font-weight: 600;
+    font-weight: 500;
+    color: var(--gray-600);
 }
 
 /* Column alignment for Last Update, Aging, and Actions (Header and Content) */
@@ -505,24 +509,31 @@ tr:hover {
     background: white;
     padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid transparent;
+    box-shadow: var(--shadow);
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
     align-items: center;
     text-align: center;
 }
 
 .doc-card h3 {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     margin: 0;
-    color: var(--primary);
+    color: var(--gray-900);
+}
+
+.doc-card p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--gray-600);
 }
 
 .doc-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
 .doc-icon {

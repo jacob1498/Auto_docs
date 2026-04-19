@@ -626,12 +626,12 @@ async function updateStatsDashboard() {
 
         matrixBody.innerHTML = Object.entries(ownerGroups).map(([name, counts]) => `
             <tr>
-                <td style="font-weight: 600; color: var(--primary);">${name}</td>
+                <td style="font-weight: 500; color: var(--gray-900);">${name}</td>
                 <td>${counts.Active}</td>
-                <td><span style="color: var(--info)">${counts.Submitted}</span></td>
-                <td><span style="color: var(--warning)">${counts.Revised}</span></td>
-                <td><span style="color: var(--success)">${counts.Completed}</span></td>
-                <td style="background: var(--gray-50);">${counts.Total}</td>
+                <td>${counts.Submitted > 0 ? `<span class="badge Submitted" style="font-size: 0.65rem;">${counts.Submitted}</span>` : '0'}</td>
+                <td>${counts.Revised > 0 ? `<span class="badge Revised" style="font-size: 0.65rem;">${counts.Revised}</span>` : '0'}</td>
+                <td>${counts.Completed > 0 ? `<span class="badge Completed" style="font-size: 0.65rem;">${counts.Completed}</span>` : '0'}</td>
+                <td style="font-weight: 700; color: var(--primary);">${counts.Total}</td>
             </tr>
         `).join('');
     } else if (adminSection) {
