@@ -149,20 +149,62 @@
         <div class="modal-card card">
             <h2>Add Document</h2>
             <form id="add-doc-form">
-                <div class="field-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label for="doc-title-input">Document Title</label>
-                        <span id="char-counter" class="char-counter">0 / 50</span>
-                    </div>
-                    <input type="text" id="doc-title-input" placeholder="Enter document name..." required minlength="3" maxlength="50">
-                </div>
+                <!-- 1st: Category -->
                 <div class="field-group">
                     <label for="doc-category-select">Document Category</label>
                     <select id="doc-category-select" required>
-                        <option value="IAAF">IAAF</option>
                         <option value="IR">IR</option>
+                        <option value="IAAF">IAAF</option>
                     </select>
                 </div>
+
+                <!-- IAAF Specific Fields (Hidden by default) -->
+                <div id="iaaf-specific-fields" class="hidden">
+                    <!-- 2nd: Control Number -->
+                    <div class="field-group">
+                        <label for="doc-control-no">Control Number</label>
+                        <input type="text" id="doc-control-no" placeholder="ECOM-YYYY-0000">
+                    </div>
+
+                    <!-- 4th: Adj Type -->
+                    <div class="field-group">
+                        <label for="doc-adj-type">Adjustment Type</label>
+                        <select id="doc-adj-type">
+                            <option value="Write Back">Write Back</option>
+                            <option value="Write off">Write off</option>
+                            <option value="Writeback/Writeoff">Writeback/Writeoff</option>
+                        </select>
+                    </div>
+
+                    <!-- 5th: Reason Code -->
+                    <div class="field-group">
+                        <label for="doc-reason-code">Reason Code</label>
+                        <select id="doc-reason-code">
+                            <option value="">Select Code</option>
+                            <option value="13">13</option><option value="3">3</option>
+                            <option value="93">93</option><option value="83">83</option>
+                            <option value="90">90</option><option value="10">10</option>
+                            <option value="9">9</option><option value="70">70</option>
+                            <option value="91">91</option>
+                        </select>
+                    </div>
+
+                    <!-- 6th: Reason Description -->
+                    <div class="field-group">
+                        <label for="doc-reason-desc">Reason Description</label>
+                        <input type="text" id="doc-reason-desc" readonly style="background-color: var(--gray-100); cursor: not-allowed;">
+                    </div>
+                </div>
+
+                <!-- 3rd: Subject / Reason (Title) -->
+                <div class="field-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="doc-title-input">Subject / Reason</label>
+                        <span id="char-counter" class="char-counter">0 / 50</span>
+                    </div>
+                    <input type="text" id="doc-title-input" placeholder="Enter subject or reason..." required minlength="3" maxlength="50">
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" id="close-modal" class="auth-btn cancel-btn">Cancel</button>
                     <button type="submit" class="auth-btn">Create Document</button>
