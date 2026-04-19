@@ -621,8 +621,8 @@ async function renderAdminDashboard() {
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
-        // Only show receive button if document is submitted (Adjusted - for Routing) and not already completed
-        const showReceiveBtn = doc.status === 'Adjusted - for Routing' && doc.final_status !== 'Completed';
+        // Only show receive button if document has been officially submitted by the client
+        const showReceiveBtn = doc.final_status === 'Submitted';
         const receiveBtnHtml = showReceiveBtn ? `
             <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Received">
                 <span class="material-symbols-outlined" style="color: var(--success)">check_circle</span>
@@ -643,6 +643,7 @@ async function renderAdminDashboard() {
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="Submitted" ${doc.final_status === 'Submitted' ? 'selected' : ''}>Submitted</option>
                     <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
                     <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
@@ -698,8 +699,8 @@ async function renderClientDashboard(userId) {
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
-        // Show Submit button only if it needs routing and hasn't been submitted yet
-        const canSubmit = doc.status !== 'Adjusted - for Routing' && doc.status !== 'Cancelled';
+        // Show Submit button only if status includes 'Routing' and it's currently in Pending state
+        const canSubmit = doc.status.includes('Routing') && doc.final_status === 'Pending';
         const submitBtnHtml = canSubmit ? `
             <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
                 <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--primary)">send</span>
@@ -755,7 +756,21 @@ window.updateStatus = async (id, status) => {
 };
 
 window.submitToAdmin = async (id) => {
-    await updateStatus(id, 'Adjusted - for Routing');
+    const { error } = await supabaseClient
+        .from('documents')
+        .update({ 
+            status: 'Adjusted - for Routing',
+            final_status: 'Submitted',
+            updated_at: new Date().toISOString() 
+        })
+        .eq('id', id);
+    
+    if (!error) {
+        showToast("Document Submitted to Admin");
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        currentUserRole = null; 
+        showApp(user);
+    }
 };
 
 window.receiveDocument = async (id) => {
