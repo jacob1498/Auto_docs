@@ -919,13 +919,9 @@ window.updateStatus = async (id, status, customMsg = null) => {
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
     
-    // 1. Perform the update first
-    const success = await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
-    
-    // 2. Only switch the tab visually if the database update actually worked
-    if (success) {
-        await switchClientTab('submitted');
-    }
+    // Perform the update and refresh the current view. 
+    // We remain in the current tab as requested to avoid logic conflicts.
+    await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
 };
 
 window.receiveDocument = async (id) => {
