@@ -520,13 +520,16 @@ async function renderAdminDashboard() {
         query = query.eq('status', filterStatus);
     }
 
-    const { data: docs, error } = await query.order('created_at', { ascending: sortBy === 'asc' });
-    
-    console.log("Admin View Data:", docs); // Debug: Check if data is arriving
+    const { data: docs, error } = await query.order('created_at', { 
+        ascending: sortBy === 'asc' 
+    });
 
     if (error) {
         console.error("Admin Fetch Error:", error.message);
-        showToast("Fetch Error: " + error.message);
+        const tbody = document.querySelector('#admin-doc-table tbody');
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--danger);">
+            Error loading data: ${error.message}
+        </td></tr>`;
         return;
     }
 
@@ -587,10 +590,26 @@ async function renderClientDashboard(userId) {
         query = query.eq('status', filterStatus);
     }
 
-    const { data: docs } = await query.order('created_at', { ascending: sortBy === 'asc' });
+    const { data: docs, error } = await query.order('created_at', { 
+        ascending: sortBy === 'asc' 
+    });
 
     const container = document.getElementById('client-doc-list');
-    container.innerHTML = docs ? docs.map(doc => `
+
+    if (error) {
+        console.error("Client Fetch Error:", error.message);
+        container.innerHTML = `<p style="color: var(--danger);">Error loading your documents.</p>`;
+        return;
+    }
+
+    if (!docs || docs.length === 0) {
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray-500);">
+            You haven't created any documents yet.
+        </p>`;
+        return;
+    }
+
+    container.innerHTML = docs.map(doc => `
         <div class="doc-card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div class="doc-icon">
@@ -619,7 +638,7 @@ async function renderClientDashboard(userId) {
                 <button class="btn-danger" style="width: 100%;" onclick="deleteDocument('${doc.id}')">Delete Document</button>
             </div>
         </div>
-    `).join('') : '';
+    `).join('');
 }
 
 // Global function for admin actions
