@@ -315,7 +315,6 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         if (!editingId) {
             insertData.owner_id = user.id;
-            insertData.status = 'Pending';
         }
 
         if (category === 'IAAF') {
@@ -335,6 +334,8 @@ addDocForm?.addEventListener('submit', async (e) => {
                 .eq('id', editingId);
             error = updateError;
         } else {
+            // Set initial status on creation if not already part of insertData
+            insertData.status = initialStatus || 'Pending';
             const { error: insertError } = await supabaseClient
                 .from('documents')
                 .insert([insertData]);
@@ -622,7 +623,7 @@ async function renderAdminDashboard() {
 
     let query = supabaseClient
         .from('documents')
-        .select(`*, profiles!owner_id(email)`);
+        .select(`*`);
 
     if (currentAdminTab === 'submitted') {
         query = query.eq('status', 'Submitted');
@@ -671,7 +672,7 @@ async function renderAdminDashboard() {
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
-            <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
+            <td style="font-weight: 500;">${doc.owner_name || '—'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
@@ -748,7 +749,7 @@ async function renderClientDashboard(userId) {
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
-            <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
+            <td style="font-weight: 500;">${doc.owner_name || '—'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
@@ -796,27 +797,12 @@ window.submitToAdmin = async (id) => {
 
 window.receiveDocument = async (id) => {
     // Admin action: Mark as received/completed
-    currentAdminTab = 'completed'; 
     await updateStatus(id, 'Completed');
+    currentAdminTab = 'completed'; 
 };
 
 window.returnToClient = async (id) => {
     if (!confirm("Return this document to the client for revision?")) return;
-    try {
-        const { error } = await supabaseClient
-            .from('documents')
-            .update({ 
-                status: 'Revised', 
-                updated_at: new Date().toISOString() 
-            })
-            .eq('id', id);
-        
-        if (error) throw error;
-        showToast("Returned to client for revision");
-        currentAdminTab = 'returned';
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) showApp(session.user);
-    } catch (err) {
-        alert("Return failed: " + err.message);
-    }
+    await updateStatus(id, 'Revised', 'Returned to client for revision');
+    currentAdminTab = 'returned';
 };
