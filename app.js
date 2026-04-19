@@ -413,6 +413,7 @@ async function renderAdminDashboard() {
                 <div style="font-weight: 600;">${doc.title}</div>
                 ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}</div>` : ''}
             </td>
+            <td>${doc.title}</td>
             <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
