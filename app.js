@@ -985,8 +985,14 @@ document.addEventListener('click', (e) => {
 });
 
 async function showApp(user) {
+    // Hide login screen and show the app
+    authContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
-    userDisplay.innerText = `Logged in as: ${user.email}`;
+
+    // Update header with initial user info from metadata
+    const role = user.user_metadata?.role || 'user';
+    document.getElementById('header-user-name').innerText = user.email.split('@')[0];
+    document.getElementById('header-user-role').innerText = role;
 
     // Only fetch role if we don't have it cached
     if (!currentUserRole) {
