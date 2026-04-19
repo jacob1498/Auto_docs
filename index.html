@@ -93,8 +93,10 @@
                     <div class="filter-box">
                         <select id="filter-status">
                             <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
+                            <option value="Adjusted - for Routing">Adjusted - for Routing</option>
+                            <option value="For Adjustment - for Routing">For Adjustment - for Routing</option>
+                            <option value="Revised">Revised</option>
+                            <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
                     <button id="reset-filters" class="reset-btn" title="Reset all filters">
@@ -117,9 +119,11 @@
                     <thead>
                         <tr>
                             <th>Title</th>
+                            <th>Owner Name</th>
                             <th>Category</th>
-                            <th>Owner</th>
+                            <th>Created By</th>
                             <th>Status</th>
+                            <th>Final Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -164,13 +168,29 @@
                     <input type="text" id="doc-control-no" placeholder="ECOM-YYYY-0000" pattern="ECOM-[0-9]{4}-[0-9]{4}">
                 </div>
 
+                <!-- Owner Name Selection -->
+                <div class="field-group">
+                    <label for="doc-owner-name">Owner Name</label>
+                    <select id="doc-owner-name" required>
+                        <option value="">Select Owner</option>
+                        <option value="Jaime">Jaime</option>
+                        <option value="Darwin">Darwin</option>
+                        <option value="DJ">DJ</option>
+                        <option value="Abi">Abi</option>
+                        <option value="Marie">Marie</option>
+                        <option value="Jhing">Jhing</option>
+                        <option value="Maria">Maria</option>
+                        <option value="Nicole">Nicole</option>
+                    </select>
+                </div>
+
                 <!-- 3rd: Subject / Reason (Title) -->
                 <div class="field-group">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <label for="doc-title-input">Subject / Reason</label>
-                        <span id="char-counter" class="char-counter">0 / 50</span>
+                        <span id="char-counter" class="char-counter">0 / 200</span>
                     </div>
-                    <input type="text" id="doc-title-input" placeholder="Enter subject or reason..." required minlength="3" maxlength="50">
+                    <textarea id="doc-title-input" placeholder="Enter subject or reason..." required minlength="3" maxlength="200" rows="5" style="width: 100%; padding: 0.75rem; border: 1px solid var(--gray-200); border-radius: 8px; font-family: inherit; resize: vertical; min-height: 120px;"></textarea>
                 </div>
 
                 <!-- 4th, 5th, 6th: IAAF Specific Fields -->
