@@ -805,7 +805,7 @@ textarea#doc-title-input:focus {
 }
 
 /* Status Badge Colors */
-.badge.Pending { background: #e0e7ff; color: #4338ca; }
+.badge.Active { background: #e0e7ff; color: #4338ca; }
 .badge.Completed { background: #dcfce7; color: #15803d; }
 .badge.Submitted { background: #e0f2fe; color: #0369a1; }
 .badge.Cancelled { background: #fee2e2; color: #b91c1c; }

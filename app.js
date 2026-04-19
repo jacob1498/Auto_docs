@@ -355,7 +355,7 @@ addDocForm?.addEventListener('submit', async (e) => {
             error = updateError;
         } else {
             // Set initial status on creation if not already part of insertData
-            insertData.status = initialStatus || 'Pending';
+            insertData.status = initialStatus || 'Active';
             const { error: insertError } = await supabaseClient
                 .from('documents')
                 .insert([insertData]);
@@ -710,7 +710,7 @@ async function renderAdminDashboard() {
     tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
-        const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
+        const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
         return `
@@ -796,7 +796,7 @@ async function renderClientDashboard(userId) {
     container.innerHTML = docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
-        const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
+        const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
         return `
