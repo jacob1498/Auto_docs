@@ -585,25 +585,9 @@ async function renderAdminDashboard() {
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
-    // Sync Admin Tab UI
-    const tabAll = document.getElementById('admin-tab-all');
-    const tabSubmitted = document.getElementById('admin-tab-submitted');
-    const tabReturned = document.getElementById('admin-tab-returned');
-    const tabCompleted = document.getElementById('admin-tab-completed');
-    if (tabAll && tabSubmitted && tabReturned && tabCompleted) {
-        tabAll.classList.toggle('active', activeAdminTab === 'all');
-        tabSubmitted.classList.toggle('active', activeAdminTab === 'submitted');
-        tabReturned.classList.toggle('active', activeAdminTab === 'returned');
-        tabCompleted.classList.toggle('active', activeAdminTab === 'completed');
-    }
-
     let query = supabaseClient
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
-
-    if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-    }
 
     const { data: docs, error } = await query.order('created_at', { 
         ascending: sortBy === 'asc' 
@@ -625,10 +609,17 @@ async function renderAdminDashboard() {
         return;
     }
 
+    // Sync Admin Tab UI
+    const tabs = ['all', 'submitted', 'returned', 'completed'];
+    tabs.forEach(tab => {
+        const el = document.getElementById(`admin-tab-${tab}`);
+        if (el) el.classList.toggle('active', activeAdminTab === tab);
+    });
+
     // Filter by Tab
-    const filteredByTab = (docs || []).filter(doc => {
+    let filteredByTab = (docs || []).filter(doc => {
         const isSubmitted = doc.final_status === 'Submitted';
-        const isReturned = doc.status === 'Revised' && doc.return_reason;
+        const isReturned = (doc.status === 'Revised' || doc.status === 'For Adjustment - for Routing') && doc.return_reason;
         const isCompleted = doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
 
         if (activeAdminTab === 'submitted') {
@@ -644,6 +635,11 @@ async function renderAdminDashboard() {
         // "All Monitoring" now shows items that haven't moved to other workflow buckets
         return !isSubmitted && !isReturned && !isCompleted;
     });
+
+    // Apply secondary status filter if not 'all'
+    if (filterStatus !== 'all') {
+        filteredByTab = filteredByTab.filter(doc => doc.status === filterStatus);
+    }
 
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
