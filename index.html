@@ -84,16 +84,45 @@
                 <!-- High-level Dashboard View -->
                 <section id="stats-view" class="role-view hidden">
                     <h1>Dashboard Overview</h1>
-                    <div class="grid-list">
+                    <div class="grid-list" id="stats-summary-cards">
                         <div class="doc-card">
                             <div class="doc-icon"><span class="material-symbols-outlined">assessment</span></div>
                             <h3 id="stat-total-docs">0</h3>
                             <p>Total Documents</p>
                         </div>
                         <div class="doc-card">
-                            <div class="doc-icon" style="color: var(--warning)"><span class="material-symbols-outlined">pending_actions</span></div>
+                            <div class="doc-icon" style="color: var(--info)"><span class="material-symbols-outlined">pending_actions</span></div>
                             <h3 id="stat-pending-docs">0</h3>
-                            <p>Pending Review</p>
+                            <p>Submitted</p>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon" style="color: var(--warning)"><span class="material-symbols-outlined">assignment_return</span></div>
+                            <h3 id="stat-returned-docs">0</h3>
+                            <p>Returned</p>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon" style="color: var(--success)"><span class="material-symbols-outlined">task_alt</span></div>
+                            <h3 id="stat-completed-docs">0</h3>
+                            <p>Completed</p>
+                        </div>
+                    </div>
+
+                    <div id="admin-breakdown-section" class="hidden" style="margin-top: 3rem;">
+                        <h2 style="text-align: left; margin-bottom: 1.5rem;">Document Status by Owner</h2>
+                        <div class="table-container">
+                            <table id="owner-status-matrix">
+                                <thead>
+                                    <tr>
+                                        <th>Owner Name</th>
+                                        <th style="text-align: center;">Active</th>
+                                        <th style="text-align: center;">Submitted</th>
+                                        <th style="text-align: center;">Returned</th>
+                                        <th style="text-align: center;">Completed</th>
+                                        <th style="text-align: center;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
                         </div>
                     </div>
                 </section>

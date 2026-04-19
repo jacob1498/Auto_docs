@@ -317,6 +317,12 @@ tr:nth-child(even) {
     background-color: #fcfcfd; /* Zebra striping */
 }
 
+/* Matrix styles */
+#owner-status-matrix td:not(:first-child) {
+    text-align: center;
+    font-weight: 600;
+}
+
 /* Column alignment for Last Update, Aging, and Actions (Header and Content) */
 .col-meta, 
 th:nth-last-child(-n+3), 

@@ -18,6 +18,7 @@ let currentClientTab = 'active';
 let currentAdminTab = 'all';
 let currentAdminPage = 0;
 let currentClientPage = 0;
+let currentSearchTerm = '';
 let currentSidebarView = 'documents'; // Default view
 const PAGE_SIZE = 10;
 let realtimeSubscription = null;
@@ -98,41 +99,43 @@ let searchTimeout;
 document.addEventListener('input', (e) => {
     if (!e.target.classList.contains('dashboard-search')) return;
     
-    const term = e.target.value.toLowerCase();
+    const term = e.target.value.trim();
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-table tbody tr');
-        let visibleCount = 0;
+    searchTimeout = setTimeout(async () => {
+        currentSearchTerm = term;
+        currentAdminPage = 0; // Reset pagination on new search
+        currentClientPage = 0;
 
         const clearBtn = e.target.parentElement.querySelector('.clear-search-btn');
         if (clearBtn) clearBtn.classList.toggle('hidden', term === '');
 
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            const matches = text.includes(term);
-            item.style.display = matches ? '' : 'none';
-            if (matches) visibleCount++;
-        });
-
-        const noResults = document.getElementById('no-results');
-        if (noResults) {
-            noResults.classList.toggle('hidden', visibleCount > 0 || items.length === 0);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            if (currentUserRole === 'admin') {
+                await renderAdminDashboard();
+            } else {
+                await renderClientDashboard(session.user.id);
+            }
         }
-    }, 300);
+    }, 400);
 });
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
     const clearBtn = e.target.closest('.clear-search-btn');
     if (clearBtn) {
         const searchInput = clearBtn.parentElement.querySelector('.dashboard-search');
         searchInput.value = '';
-        searchInput.focus();
-        
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-table tbody tr');
-        items.forEach(item => item.style.display = '');
-        
-        document.getElementById('no-results')?.classList.add('hidden');
-        clearBtn?.classList.add('hidden');
+        currentSearchTerm = '';
+        clearBtn.classList.add('hidden');
+
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            if (currentUserRole === 'admin') {
+                await renderAdminDashboard();
+            } else {
+                await renderClientDashboard(session.user.id);
+            }
+        }
     }
 });
 
@@ -373,32 +376,22 @@ addDocForm?.addEventListener('submit', async (e) => {
             error = insertError;
         }
 
-        // Automatically switch tab based on the selected status so the user sees the change
-        if (initialStatus === 'Submitted') {
-            currentClientTab = 'submitted';
-            currentClientPage = 0;
-        } else if (initialStatus === 'Revised') {
-            currentClientTab = 'returned';
-            currentClientPage = 0;
-        } else if (initialStatus === 'Completed') {
-            currentClientTab = 'completed';
-            currentClientPage = 0;
-        } else {
-            currentClientTab = 'active';
-            currentClientPage = 0;
-        }
-
         if (error) throw error;
+
+        // Automatically switch tab based on the selected status so the user sees the change
+        const tabMapping = { 'Submitted': 'submitted', 'Revised': 'returned', 'Completed': 'completed' };
+        currentClientTab = tabMapping[initialStatus] || 'active';
+        currentClientPage = 0;
 
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
+        showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
         editingId = null;
         document.querySelector('.modal-card h2').innerText = "Add Document";
         document.querySelector('#add-doc-form button[type="submit"]').innerText = "Create Document";
         if (charCounter) charCounter.innerText = '0 / 200';
         document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
-        showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
         showApp(user);
     } catch (err) {
         alert(err.message);
@@ -589,17 +582,61 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 async function updateStatsDashboard() {
-    const { data: docs, error } = await supabaseClient.from('documents').select('status');
+    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name');
     if (error) return;
 
-    const total = docs.length;
-    const pending = docs.filter(d => d.status === 'Submitted').length;
+    // Calculate high-level stats
+    const stats = {
+        total: docs.length,
+        submitted: docs.filter(d => d.status === 'Submitted').length,
+        returned: docs.filter(d => d.status === 'Revised').length,
+        completed: docs.filter(d => d.status === 'Completed').length
+    };
 
-    const totalEl = document.getElementById('stat-total-docs');
-    const pendingEl = document.getElementById('stat-pending-docs');
-    
-    if (totalEl) totalEl.innerText = total;
-    if (pendingEl) pendingEl.innerText = pending;
+    // Update metric cards
+    if (document.getElementById('stat-total-docs')) document.getElementById('stat-total-docs').innerText = stats.total;
+    if (document.getElementById('stat-pending-docs')) document.getElementById('stat-pending-docs').innerText = stats.submitted;
+    if (document.getElementById('stat-returned-docs')) document.getElementById('stat-returned-docs').innerText = stats.returned;
+    if (document.getElementById('stat-completed-docs')) document.getElementById('stat-completed-docs').innerText = stats.completed;
+
+    // Admin-only breakdown matrix
+    const adminSection = document.getElementById('admin-breakdown-section');
+    if (currentUserRole === 'admin' && adminSection) {
+        adminSection.classList.remove('hidden');
+        const matrixBody = document.querySelector('#owner-status-matrix tbody');
+        
+        // Group documents by owner
+        const ownerGroups = docs.reduce((acc, doc) => {
+            const owner = doc.owner_name || 'Unassigned';
+            if (!acc[owner]) {
+                acc[owner] = { Active: 0, Submitted: 0, Revised: 0, Completed: 0, Total: 0 };
+            }
+            
+            // Map Revised status to Returned label for clarity if needed, 
+            // but here we use the DB status keys
+            const statusKey = doc.status === 'Cancelled' ? 'Active' : doc.status;
+            if (acc[owner].hasOwnProperty(statusKey)) {
+                acc[owner][statusKey]++;
+            } else {
+                acc[owner].Active++; // Default bucket
+            }
+            acc[owner].Total++;
+            return acc;
+        }, {});
+
+        matrixBody.innerHTML = Object.entries(ownerGroups).map(([name, counts]) => `
+            <tr>
+                <td style="font-weight: 600; color: var(--primary);">${name}</td>
+                <td>${counts.Active}</td>
+                <td><span style="color: var(--info)">${counts.Submitted}</span></td>
+                <td><span style="color: var(--warning)">${counts.Revised}</span></td>
+                <td><span style="color: var(--success)">${counts.Completed}</span></td>
+                <td style="background: var(--gray-50);">${counts.Total}</td>
+            </tr>
+        `).join('');
+    } else if (adminSection) {
+        adminSection.classList.add('hidden');
+    }
 }
 
 // Realtime Subscription Logic
@@ -696,6 +733,11 @@ async function renderAdminDashboard() {
         query = query.eq('status', 'Completed');
     }
 
+    // Server-side filtering logic
+    if (currentSearchTerm) {
+        query = query.or(`title.ilike.%${currentSearchTerm}%,owner_name.ilike.%${currentSearchTerm}%,control_number.ilike.%${currentSearchTerm}%`);
+    }
+
     const from = currentAdminPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
@@ -718,6 +760,10 @@ async function renderAdminDashboard() {
         </td></tr>`;
         return;
     }
+
+    // Toggle global no-results display if no records match
+    const noResults = document.getElementById('no-results');
+    if (noResults) noResults.classList.toggle('hidden', docs && docs.length > 0);
 
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
@@ -803,6 +849,11 @@ async function renderClientDashboard(userId) {
             break;
     }
 
+    // Server-side filtering logic
+    if (currentSearchTerm) {
+        query = query.or(`title.ilike.%${currentSearchTerm}%,owner_name.ilike.%${currentSearchTerm}%,control_number.ilike.%${currentSearchTerm}%`);
+    }
+
     const from = currentClientPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
@@ -816,6 +867,10 @@ async function renderClientDashboard(userId) {
         container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
+
+    // Toggle global no-results display if no records match
+    const noResults = document.getElementById('no-results');
+    if (noResults) noResults.classList.toggle('hidden', docs && docs.length > 0);
 
     if (!docs || docs.length === 0) {
         container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
