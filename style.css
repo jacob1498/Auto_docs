@@ -317,6 +317,12 @@ tr:nth-child(even) {
     background-color: #fcfcfd; /* Zebra striping */
 }
 
+/* Column alignment for Last Update, Aging, and Actions */
+.col-meta {
+    text-align: center;
+    white-space: nowrap;
+}
+
 tr:hover {
     background-color: #f1f5f9 !important;
 }
