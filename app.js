@@ -12,6 +12,7 @@ const loginForm = document.getElementById('login-form');
 const signupForm = document.getElementById('signup-form');
 const logoutBtn = document.getElementById('logout-btn');
 const userDisplay = document.getElementById('user-display');
+let currentUserRole = null;
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -465,24 +466,25 @@ async function showApp(user) {
     appContainer.classList.remove('hidden');
     userDisplay.innerText = `Logged in as: ${user.email}`;
 
-    let role = user.user_metadata?.role;
-
-    try {
-        // Try to get the latest role from the database
-        const { data: profile, error } = await supabaseClient
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-        
-        if (profile && !error) {
-            role = profile.role;
+    // Only fetch role if we don't have it cached
+    if (!currentUserRole) {
+        currentUserRole = user.user_metadata?.role;
+        try {
+            const { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .maybeSingle();
+            
+            if (profile && !error) {
+                currentUserRole = profile.role;
+            }
+        } catch (err) {
+            console.warn("Profile table fetch failed, falling back to metadata.", err);
         }
-    } catch (err) {
-        console.warn("Profile table fetch failed, falling back to metadata.", err);
     }
 
-    if (role === 'admin') {
+    if (currentUserRole === 'admin') {
         await renderAdminDashboard();
     } else {
         await renderClientDashboard(user.id);
@@ -518,10 +520,16 @@ async function renderAdminDashboard() {
         query = query.eq('status', filterStatus);
     }
 
-    const { data: docs } = await query.order('created_at', { ascending: sortBy === 'asc' });
+    const { data: docs, error } = await query.order('created_at', { ascending: sortBy === 'asc' });
+
+    if (error) {
+        console.error("Admin Fetch Error:", error.message);
+        showToast("Error loading admin data");
+        return;
+    }
 
     const tbody = document.querySelector('#admin-doc-table tbody');
-    tbody.innerHTML = docs ? docs.map(doc => {
+    tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const createdDate = new Date(doc.created_at).toLocaleString();
@@ -559,7 +567,7 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>
-    `}).join('') : '';
+    `}).join('') : '<tr><td colspan="9" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
 }
 
 async function renderClientDashboard(userId) {
