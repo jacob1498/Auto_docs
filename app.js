@@ -10,7 +10,6 @@ const loginView = document.getElementById('login-view');
 const signupView = document.getElementById('signup-view');
 const loginForm = document.getElementById('login-form');
 const signupForm = document.getElementById('signup-form');
-const logoutBtn = document.getElementById('logout-btn');
 const userDisplay = document.getElementById('user-display');
 let currentUserRole = null;
 let editingId = null;
@@ -112,7 +111,18 @@ async function switchSidebarView(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
-document.getElementById('user-profile-header')?.addEventListener('click', () => switchSidebarView('profile'));
+
+// Profile Dropdown Toggle
+document.getElementById('user-profile-header')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('profile-dropdown').classList.toggle('hidden');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', () => {
+    document.getElementById('profile-dropdown')?.classList.add('hidden');
+});
+
 document.getElementById('profile-form')?.addEventListener('submit', (e) => { e.preventDefault(); updateProfile(); });
 
 document.getElementById('export-reports-btn')?.addEventListener('click', () => {
@@ -970,10 +980,11 @@ function initRealtimeSubscription(user) {
 }
 
 // 3. Handle Logout
-logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#logout-btn')) supabaseClient.auth.signOut();
+});
 
 async function showApp(user) {
-    authContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
     userDisplay.innerText = `Logged in as: ${user.email}`;
 

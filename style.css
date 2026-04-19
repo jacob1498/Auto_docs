@@ -335,6 +335,66 @@ tr:hover {
     background-color: #f8fafc !important;
 }
 
+/* Profile Header & Dropdown */
+.profile-menu-container {
+    position: relative;
+}
+
+.top-bar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 2.5rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-100);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 1000;
+    animation: modalIn 0.2s ease-out;
+}
+
+.profile-dropdown button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: none;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    width: 100%;
+    transition: background 0.2s;
+}
+
+.profile-dropdown button:hover {
+    background: var(--gray-50);
+    color: var(--primary);
+}
+
+.dropdown-logout:hover {
+    color: var(--danger) !important;
+    background: #fef2f2 !important;
+}
+
 /* Simple Analytics Bar Styles */
 .chart-row {
     display: flex;

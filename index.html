@@ -62,10 +62,6 @@
                     Settings
                 </a>
             </nav>
-            <div class="sidebar-user">
-                <p id="user-display"></p>
-                <button id="logout-btn" class="logout-btn-alt">Logout</button>
-            </div>
         </aside>
 
         <div class="main-wrapper">
@@ -78,13 +74,23 @@
 
             <header class="top-bar-nav">
                 <div class="top-bar-search-placeholder"></div>
-                <div class="user-profile-trigger" id="user-profile-header">
-                    <div class="user-info-text">
-                        <span id="header-user-name">User</span>
-                        <span id="header-user-role">Role</span>
+                <div class="profile-menu-container">
+                    <div class="user-profile-trigger" id="user-profile-header">
+                        <div class="user-info-text">
+                            <span id="header-user-name">User</span>
+                            <span id="header-user-role">Role</span>
+                        </div>
+                        <div class="user-avatar">
+                            <span class="material-symbols-outlined">account_circle</span>
+                        </div>
                     </div>
-                    <div class="user-avatar">
-                        <span class="material-symbols-outlined">account_circle</span>
+                    <div id="profile-dropdown" class="profile-dropdown hidden">
+                        <button onclick="switchSidebarView('profile')">
+                            <span class="material-symbols-outlined">person</span> My Profile
+                        </button>
+                        <button id="logout-btn" class="dropdown-logout">
+                            <span class="material-symbols-outlined">logout</span> Sign Out
+                        </button>
                     </div>
                 </div>
             </header>
