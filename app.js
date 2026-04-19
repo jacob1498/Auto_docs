@@ -333,6 +333,7 @@ addDocForm?.addEventListener('submit', async (e) => {
             owner_name: ownerName,
         status: initialStatus || 'Active',
             period,
+        updated_at: new Date().toISOString(),
             week: week ? parseInt(week) : null,
             doc_date: docDate || null
         };
@@ -348,6 +349,14 @@ addDocForm?.addEventListener('submit', async (e) => {
             insertData.reason_description = REASON_DESC_MAP[reasonCode];
             insertData.amount_range = amountRange;
             insertData.charge_to = chargeTo;
+        } else {
+            // Clear IAAF fields if switching category to IR
+            insertData.control_number = null;
+            insertData.adj_type = null;
+            insertData.reason_code = null;
+            insertData.reason_description = null;
+            insertData.amount_range = null;
+            insertData.charge_to = null;
         }
 
         let error;
@@ -364,18 +373,19 @@ addDocForm?.addEventListener('submit', async (e) => {
             error = insertError;
         }
 
-        // Automatically switch tab based on initial status to show the new document
-        if (!editingId) {
-            if (initialStatus === 'Submitted') {
-                currentClientTab = 'submitted';
-                currentClientPage = 0;
-            } else if (initialStatus === 'Revised') {
-                currentClientTab = 'returned';
-                currentClientPage = 0;
-            } else {
-                currentClientTab = 'active';
-                currentClientPage = 0;
-            }
+        // Automatically switch tab based on the selected status so the user sees the change
+        if (initialStatus === 'Submitted') {
+            currentClientTab = 'submitted';
+            currentClientPage = 0;
+        } else if (initialStatus === 'Revised') {
+            currentClientTab = 'returned';
+            currentClientPage = 0;
+        } else if (initialStatus === 'Completed') {
+            currentClientTab = 'completed';
+            currentClientPage = 0;
+        } else {
+            currentClientTab = 'active';
+            currentClientPage = 0;
         }
 
         if (error) throw error;
