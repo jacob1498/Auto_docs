@@ -672,6 +672,35 @@ textarea#doc-title-input:focus {
     color: var(--danger);
 }
 
+/* Tabs Styling */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 0.4rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--gray-200);
+    width: fit-content;
+}
+
+.tab-btn {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    border-radius: 0.6rem;
+    background: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--gray-600);
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Toast Styles */
 .toast {
     position: fixed;

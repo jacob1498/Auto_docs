@@ -113,6 +113,12 @@
                 <!-- Admin View -->
                 <section id="admin-view" class="role-view hidden">
                     <h1>Admin Dashboard</h1>
+                    <div class="tabs">
+                        <button class="tab-btn active" id="admin-tab-all" onclick="switchAdminTab('all')">All Monitoring</button>
+                        <button class="tab-btn" id="admin-tab-submitted" onclick="switchAdminTab('submitted')">Submitted for Review</button>
+                        <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
+                        <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
+                    </div>
                     <div class="stats-bar">
                         <span class="material-symbols-outlined">analytics</span>
                         All Documents Monitoring
@@ -142,6 +148,12 @@
             <!-- Client View -->
             <section id="client-view" class="role-view hidden">
                 <h1>My Documents</h1>
+                <div class="tabs">
+                    <button class="tab-btn active" id="client-tab-active" onclick="switchClientTab('active')">Active Documents</button>
+                    <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
+                    <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
+                </div>
+
                 <button id="upload-trigger" class="fab" title="Add New Document">
                     <span class="material-symbols-outlined">add</span>
                 </button>
@@ -192,6 +204,20 @@
                         <select id="doc-category-select" required>
                             <option value="IR">IR</option>
                             <option value="IAAF">IAAF</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Selection -->
+                    <div class="field-group">
+                        <label for="doc-status-select">
+                            <span class="material-symbols-outlined">flag</span>
+                            Initial Status
+                        </label>
+                        <select id="doc-status-select">
+                            <option value="For Adjustment - for Routing">For Adjustment - for Routing</option>
+                            <option value="Adjusted - for Routing">Adjusted - for Routing</option>
+                            <option value="Revised">Revised</option>
+                            <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
 
