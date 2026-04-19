@@ -55,17 +55,20 @@ async function switchSidebarView(viewName) {
     if (viewName === 'dashboard') {
         statsView.classList.remove('hidden');
         docViews.forEach(v => v.classList.add('hidden'));
-        updateStatsDashboard();
+        await updateStatsDashboard();
     } else if (viewName === 'documents') {
         statsView.classList.add('hidden');
         // The actual role-based rendering happens in showApp or re-renders
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             const user = session.user;
-            if (user.user_metadata?.role === 'admin' || currentUserRole === 'admin') {
-                renderAdminDashboard();
+            // Force role check
+            const role = currentUserRole || user.user_metadata?.role;
+            
+            if (role === 'admin') {
+                await renderAdminDashboard();
             } else {
-                renderClientDashboard(user.id);
+                await renderClientDashboard(user.id);
             }
         }
     }
@@ -617,7 +620,7 @@ async function showApp(user) {
     }
 
     // Default to the documents view on login
-    switchSidebarView('documents');
+    await switchSidebarView('documents');
 
     // Initialize realtime syncing
     initRealtimeSubscription(user);
@@ -642,6 +645,10 @@ async function renderAdminDashboard() {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
     
+    const tbody = document.querySelector('#admin-doc-table tbody');
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-top-color: var(--primary);"></div></td></tr>';
+
     const adminPagination = document.getElementById('admin-pagination');
     adminPagination.innerHTML = '';
 
@@ -691,7 +698,6 @@ async function renderAdminDashboard() {
         statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> Total Records: ${count || 0}`;
     }
 
-    const tbody = document.querySelector('#admin-doc-table tbody');
     tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
@@ -733,6 +739,11 @@ async function renderClientDashboard(userId) {
     document.getElementById('client-view').classList.remove('hidden');
     document.getElementById('admin-view').classList.add('hidden');
 
+    const container = document.getElementById('client-doc-list');
+    // Show loading state
+    container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-top-color: var(--primary);"></div></td></tr>';
+
+
     const clientPagination = document.getElementById('client-pagination');
     clientPagination.innerHTML = '';
 
@@ -760,8 +771,6 @@ async function renderClientDashboard(userId) {
     const { data: docs, error, count } = await query
         .order('created_at', { ascending: false })
         .range(from, to);
-
-    const container = document.getElementById('client-doc-list');
 
     if (error) {
         console.error("Client Fetch Error:", error.message);
