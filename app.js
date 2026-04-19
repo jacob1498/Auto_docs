@@ -674,7 +674,7 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 async function updateStatsDashboard() {
-    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at');
+    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at, control_number, category');
     if (error) return;
 
     // Calculate high-level stats
@@ -693,10 +693,12 @@ async function updateStatsDashboard() {
 
     // Admin-only breakdown matrix
     const adminSection = document.getElementById('admin-breakdown-section');
+    const adminSerialSection = document.getElementById('admin-serial-monitor-section');
     const adminAgingSection = document.getElementById('admin-aging-section');
 
     if (currentUserRole === 'admin') {
         adminSection.classList.remove('hidden');
+        adminSerialSection.classList.remove('hidden');
         adminAgingSection.classList.remove('hidden');
 
         // Calculate Aging Brackets for Submitted docs
@@ -722,6 +724,25 @@ async function updateStatsDashboard() {
                 </div>
             </div>
         `).join('');
+
+        // Render Serial Status Grid (IAAF only)
+        const serialGrid = document.getElementById('serial-status-grid');
+        const iaafDocs = docs.filter(d => d.category === 'IAAF' && d.control_number);
+        
+        // Sort by the 4-digit serial suffix
+        const sortedSerials = iaafDocs.sort((a, b) => {
+            const numA = parseInt(a.control_number.split('-').pop());
+            const numB = parseInt(b.control_number.split('-').pop());
+            return numA - numB;
+        });
+
+        serialGrid.innerHTML = sortedSerials.map(doc => {
+            const serial = doc.control_number.split('-').pop();
+            return `<div class="serial-node ${doc.status}" 
+                         title="Serial: ${serial}\nStatus: ${doc.status}\nTitle: ${doc.title}">
+                        ${serial}
+                    </div>`;
+        }).join('') || '<p style="grid-column: 1/-1; color: var(--gray-400); text-align: center; padding: 1rem;">No serial numbers recorded yet.</p>';
 
         const matrixBody = document.querySelector('#owner-status-matrix tbody');
         
@@ -756,6 +777,7 @@ async function updateStatsDashboard() {
         `).join('');
     } else if (adminSection) {
         adminSection.classList.add('hidden');
+        adminSerialSection.classList.add('hidden');
         adminAgingSection.classList.add('hidden');
     }
 }

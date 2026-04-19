@@ -337,6 +337,37 @@ tr:hover {
     background-color: #f8fafc !important;
 }
 
+/* Serial Status Grid */
+.serial-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    gap: 6px;
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow);
+}
+
+.serial-node {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: help;
+    transition: transform 0.2s, filter 0.2s;
+}
+
+.serial-node:hover {
+    transform: scale(1.2);
+    filter: brightness(1.1);
+    z-index: 10;
+}
+
 /* Profile Header & Dropdown */
 .profile-menu-container {
     position: relative;
