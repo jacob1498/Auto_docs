@@ -514,7 +514,7 @@ async function renderAdminDashboard() {
 
     let query = supabaseClient
         .from('documents')
-        .select(`*, profiles(email)`);
+        .select(`*, profiles!owner_id(email)`);
 
     if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
