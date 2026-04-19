@@ -13,6 +13,7 @@ const signupForm = document.getElementById('signup-form');
 const logoutBtn = document.getElementById('logout-btn');
 const userDisplay = document.getElementById('user-display');
 let currentUserRole = null;
+let editingId = null;
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -225,6 +226,9 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     if (charCounter) charCounter.innerText = '0 / 200';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
     // Reset disclosure
+    editingId = null;
+    document.querySelector('.modal-card h2').innerText = "Add Document";
+    document.querySelector('#add-doc-form button[type="submit"]').innerText = "Create Document";
     document.querySelectorAll('.reveal-step').forEach(el => {
         el.classList.remove('visible');
         el.classList.add('hidden'); // Ensure they are hidden again
@@ -292,13 +296,16 @@ addDocForm?.addEventListener('submit', async (e) => {
             title, 
             category, 
             owner_name: ownerName,
-            owner_id: user.id, 
-            status: 'For Adjustment - for Routing',
-            final_status: 'Pending',
             period,
             week: week ? parseInt(week) : null,
             doc_date: docDate || null
         };
+
+        if (!editingId) {
+            insertData.owner_id = user.id;
+            insertData.status = 'For Adjustment - for Routing';
+            insertData.final_status = 'Pending';
+        }
 
         if (category === 'IAAF') {
             insertData.control_number = controlNo;
@@ -309,18 +316,31 @@ addDocForm?.addEventListener('submit', async (e) => {
             insertData.charge_to = chargeTo;
         }
 
-        const { error } = await supabaseClient
-            .from('documents')
-            .insert([insertData]);
+        let error;
+        if (editingId) {
+            const { error: updateError } = await supabaseClient
+                .from('documents')
+                .update(insertData)
+                .eq('id', editingId);
+            error = updateError;
+        } else {
+            const { error: insertError } = await supabaseClient
+                .from('documents')
+                .insert([insertData]);
+            error = insertError;
+        }
 
         if (error) throw error;
 
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
+        editingId = null;
+        document.querySelector('.modal-card h2').innerText = "Add Document";
+        document.querySelector('#add-doc-form button[type="submit"]').innerText = "Create Document";
         if (charCounter) charCounter.innerText = '0 / 200';
         document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
-        showToast("Document added successfully!");
+        showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
         showApp(user);
     } catch (err) {
         alert(err.message);
@@ -339,9 +359,46 @@ window.deleteDocument = (id) => {
     confirmModal.classList.remove('hidden');
 };
 
-window.editDocument = (id) => {
-    // Implementation for opening modal with existing data
-    console.log("Edit requested for ID:", id);
+window.editDocument = async (id) => {
+    editingId = id;
+    const { data: doc, error } = await supabaseClient
+        .from('documents')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error) {
+        alert("Error fetching document details: " + error.message);
+        return;
+    }
+
+    document.getElementById('doc-title-input').value = doc.title;
+    document.getElementById('doc-category-select').value = doc.category;
+    document.getElementById('doc-owner-name').value = doc.owner_name;
+    document.getElementById('doc-date').value = doc.doc_date;
+    
+    const isIAAF = doc.category === 'IAAF';
+    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
+    
+    if (isIAAF && doc.control_number) {
+        const parts = doc.control_number.split('-');
+        document.getElementById('doc-control-no').value = parts[parts.length - 1];
+        document.getElementById('doc-adj-type').value = doc.adj_type || '';
+        document.getElementById('doc-reason-code').value = doc.reason_code || '';
+        document.getElementById('doc-reason-desc').value = doc.reason_description || '';
+        document.getElementById('doc-amount-range').value = doc.amount_range || '';
+        document.getElementById('doc-charge-to').value = doc.charge_to || '';
+    }
+
+    updateTrackingFields(doc.doc_date);
+    document.querySelectorAll('.reveal-step').forEach(el => {
+        el.classList.add('visible');
+        el.classList.remove('hidden');
+    });
+
+    document.querySelector('.modal-card h2').innerText = "Edit Document";
+    document.querySelector('#add-doc-form button[type="submit"]').innerText = "Update Document";
+    modalOverlay.classList.remove('hidden');
 };
 
 document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
@@ -574,14 +631,7 @@ async function renderAdminDashboard() {
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td style="font-size: 0.8rem; color: var(--gray-600);">${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
-            <td>
-                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
-                    <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
-                    <option value="For Adjustment - for Routing" ${doc.status === 'For Adjustment - for Routing' ? 'selected' : ''}>For Adjustment - for Routing</option>
-                    <option value="Revised" ${doc.status === 'Revised' ? 'selected' : ''}>Revised</option>
-                    <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select>
-            </td>
+            <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
@@ -593,7 +643,6 @@ async function renderAdminDashboard() {
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit"><span class="material-symbols-outlined">edit</span></button>
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
@@ -649,7 +698,14 @@ async function renderClientDashboard(userId) {
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
-            <td><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td>
+                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
+                    <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
+                    <option value="For Adjustment - for Routing" ${doc.status === 'For Adjustment - for Routing' ? 'selected' : ''}>For Adjustment - for Routing</option>
+                    <option value="Revised" ${doc.status === 'Revised' ? 'selected' : ''}>Revised</option>
+                    <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+            </td>
             <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
@@ -657,9 +713,6 @@ async function renderClientDashboard(userId) {
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
-                    </button>
-                    <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete">
-                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">delete</span>
                     </button>
                 </div>
             </td>
