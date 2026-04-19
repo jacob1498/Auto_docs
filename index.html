@@ -45,19 +45,19 @@
         <aside id="sidebar" class="sidebar">
             <div class="sidebar-brand">DocTrack</div>
             <nav class="side-nav">
-                <a href="#" class="nav-item active">
+                <a href="#" class="nav-item" id="nav-dashboard">
                     <span class="material-symbols-outlined">dashboard</span>
                     Dashboard
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item active" id="nav-documents">
                     <span class="material-symbols-outlined">description</span>
                     My Documents
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" id="nav-reports">
                     <span class="material-symbols-outlined">analytics</span>
                     Reports
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" id="nav-settings">
                     <span class="material-symbols-outlined">settings</span>
                     Settings
                 </a>
@@ -76,39 +76,45 @@
                 <div class="mobile-brand">DocTrack</div>
             </header>
             <main>
-                <div class="top-bar">
-                    <div class="search-box">
-                        <span class="material-symbols-outlined">search</span>
-                        <input type="text" id="dashboard-search" placeholder="Search documents...">
-                        <button id="clear-search" class="clear-btn hidden">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
-                    </div>
-                    <div class="sort-box">
-                        <select id="sort-date">
-                            <option value="desc">Newest First</option>
-                            <option value="asc">Oldest First</option>
-                        </select>
-                    </div>
-                    <button id="reset-filters" class="reset-btn" title="Reset all filters">
-                        <span class="material-symbols-outlined">restart_alt</span>
-                        Reset
-                    </button>
-                </div>
-
                 <div id="no-results" class="hidden">
                     <span class="material-symbols-outlined">search_off</span>
                     <p>No documents found matching your search.</p>
                 </div>
 
+                <!-- High-level Dashboard View -->
+                <section id="stats-view" class="role-view hidden">
+                    <h1>Dashboard Overview</h1>
+                    <div class="grid-list">
+                        <div class="doc-card">
+                            <div class="doc-icon"><span class="material-symbols-outlined">assessment</span></div>
+                            <h3 id="stat-total-docs">0</h3>
+                            <p>Total Documents</p>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon" style="color: var(--warning)"><span class="material-symbols-outlined">pending_actions</span></div>
+                            <h3 id="stat-pending-docs">0</h3>
+                            <p>Pending Review</p>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Admin View -->
-                <section id="admin-view" class="role-view hidden">
+                <section id="admin-view" class="role-view documents-content hidden">
                     <h1>Admin Dashboard</h1>
-                    <div class="tabs">
-                        <button class="tab-btn active" id="admin-tab-all" onclick="switchAdminTab('all')">All Monitoring</button>
-                        <button class="tab-btn" id="admin-tab-submitted" onclick="switchAdminTab('submitted')">Submitted for Review</button>
-                        <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
-                        <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
+                    <div class="tab-search-row">
+                        <div class="tabs">
+                            <button class="tab-btn active" id="admin-tab-all" onclick="switchAdminTab('all')">All Monitoring</button>
+                            <button class="tab-btn" id="admin-tab-submitted" onclick="switchAdminTab('submitted')">Submitted for Review</button>
+                            <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
+                            <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
+                        </div>
+                        <div class="search-box">
+                            <span class="material-symbols-outlined">search</span>
+                            <input type="text" class="dashboard-search" placeholder="Search documents...">
+                            <button class="clear-search-btn clear-btn hidden">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="stats-bar">
                         <span class="material-symbols-outlined">analytics</span>
@@ -132,15 +138,25 @@
                     <tbody></tbody>
                 </table>
                 </div>
+                <div id="admin-pagination" class="pagination-container"></div>
             </section>
 
             <!-- Client View -->
             <section id="client-view" class="role-view hidden">
                 <h1>My Documents</h1>
-                <div class="tabs">
-                    <button class="tab-btn active" id="client-tab-active" onclick="switchClientTab('active')">Active Documents</button>
-                    <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
-                    <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
+                <div class="tab-search-row">
+                    <div class="tabs">
+                        <button class="tab-btn active" id="client-tab-active" onclick="switchClientTab('active')">Active Documents</button>
+                        <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
+                        <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
+                    </div>
+                    <div class="search-box">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" class="dashboard-search" placeholder="Search documents...">
+                        <button class="clear-search-btn clear-btn hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
                 </div>
 
                 <button id="upload-trigger" class="fab" title="Add New Document">
@@ -165,6 +181,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="client-pagination" class="pagination-container"></div>
             </section>
             </main>
             <footer>
