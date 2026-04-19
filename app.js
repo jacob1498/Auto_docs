@@ -367,6 +367,9 @@ addDocForm?.addEventListener('submit', async (e) => {
             if (initialStatus === 'Submitted') {
                 currentClientTab = 'submitted';
                 currentClientPage = 0;
+            } else if (initialStatus === 'Revised') {
+                currentClientTab = 'returned';
+                currentClientPage = 0;
             } else {
                 currentClientTab = 'active';
                 currentClientPage = 0;
@@ -772,8 +775,10 @@ async function renderClientDashboard(userId) {
         query = query.eq('status', 'Completed');
     } else if (currentClientTab === 'submitted') {
         query = query.eq('status', 'Submitted');
+    } else if (currentClientTab === 'returned') {
+        query = query.eq('status', 'Revised');
     } else { // active
-        query = query.not('status', 'in', '("Submitted","Completed")');
+        query = query.not('status', 'in', '("Submitted","Completed","Revised")');
     }
 
     const from = currentClientPage * PAGE_SIZE;
