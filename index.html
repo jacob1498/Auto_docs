@@ -53,6 +53,10 @@
                     <span class="material-symbols-outlined">description</span>
                     My Documents
                 </a>
+                <a href="#" class="nav-item" id="nav-profile">
+                    <span class="material-symbols-outlined">person</span>
+                    Profile
+                </a>
                 <a href="#" class="nav-item" id="nav-reports">
                     <span class="material-symbols-outlined">analytics</span>
                     Reports
@@ -131,6 +135,36 @@
                                 <tbody></tbody>
                             </table>
                         </div>
+                    </div>
+                </section>
+
+                <!-- Profile View -->
+                <section id="profile-view" class="role-view hidden">
+                    <h1>My Profile</h1>
+                    <div class="card" style="max-width: 600px; margin: 0; animation: none;">
+                        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;">
+                            <div style="width: 80px; height: 80px; background: var(--gray-100); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                <span class="material-symbols-outlined" style="font-size: 3rem;">account_circle</span>
+                            </div>
+                            <div>
+                                <h2 id="profile-name-display" style="text-align: left; margin: 0;">User</h2>
+                                <p id="profile-role-display" style="color: var(--gray-600); margin: 0.25rem 0 0 0; text-transform: capitalize;">Role</p>
+                            </div>
+                        </div>
+                        <form id="profile-form">
+                            <div class="field-group">
+                                <label><span class="material-symbols-outlined">mail</span> Email Address</label>
+                                <input type="email" id="profile-email" readonly class="readonly-input">
+                            </div>
+                            <div class="field-group">
+                                <label><span class="material-symbols-outlined">badge</span> Full Name</label>
+                                <input type="text" id="profile-full-name" placeholder="Enter your full name">
+                            </div>
+                            <button type="submit" class="auth-btn" style="margin-top: 1rem;">
+                                <span class="material-symbols-outlined">save</span>
+                                Save Changes
+                            </button>
+                        </form>
                     </div>
                 </section>
 

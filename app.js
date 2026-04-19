@@ -24,6 +24,7 @@ let currentSidebarView = 'documents'; // Default view
 const PAGE_SIZE = 10;
 let monthlyGroupsCache = {}; // Store report data for export
 let realtimeSubscription = null;
+let autoRefreshInterval = null;
 
 // Helper to synchronize search UI and state
 function clearSearchUI() {
@@ -59,6 +60,7 @@ async function switchSidebarView(viewName) {
     document.getElementById('no-results')?.classList.add('hidden');
     if (viewName === 'dashboard') clearSearchUI();
     
+    const profileView = document.getElementById('profile-view');
     // Update Active Nav State
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.id === `nav-${viewName}`);
@@ -72,16 +74,25 @@ async function switchSidebarView(viewName) {
     if (viewName === 'dashboard') {
         statsView.classList.remove('hidden');
         reportsView.classList.add('hidden');
+        profileView.classList.add('hidden');
         docViews.forEach(v => v.classList.add('hidden'));
         await updateStatsDashboard();
+    } else if (viewName === 'profile') {
+        statsView.classList.add('hidden');
+        reportsView.classList.add('hidden');
+        profileView.classList.remove('hidden');
+        docViews.forEach(v => v.classList.add('hidden'));
+        await renderProfileView();
     } else if (viewName === 'reports') {
         statsView.classList.add('hidden');
+        profileView.classList.add('hidden');
         reportsView.classList.remove('hidden');
         docViews.forEach(v => v.classList.add('hidden'));
         await renderReportsView();
     } else if (viewName === 'documents') {
         statsView.classList.add('hidden');
         reportsView.classList.add('hidden');
+        profileView.classList.add('hidden');
         // The actual role-based rendering happens in showApp or re-renders
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -101,6 +112,8 @@ async function switchSidebarView(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
+document.getElementById('nav-profile')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('profile'); });
+document.getElementById('profile-form')?.addEventListener('submit', (e) => { e.preventDefault(); updateProfile(); });
 
 document.getElementById('export-reports-btn')?.addEventListener('click', () => {
     document.getElementById('export-modal-overlay').classList.remove('hidden');
@@ -807,6 +820,57 @@ async function renderReportsView() {
         }).join('');
 }
 
+async function renderProfileView() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const role = currentUserRole || user.user_metadata?.role;
+    
+    document.getElementById('profile-email').value = user.email;
+    document.getElementById('profile-role-display').innerText = role;
+
+    const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    const fullName = profile?.full_name || '';
+    document.getElementById('profile-full-name').value = fullName;
+    document.getElementById('profile-name-display').innerText = fullName || 'User';
+}
+
+async function updateProfile() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const fullName = document.getElementById('profile-full-name').value.trim();
+    const btn = document.querySelector('#profile-form button[type="submit"]');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Saving...';
+
+    try {
+        const { error } = await supabaseClient
+            .from('profiles')
+            .upsert({ 
+                id: user.id, 
+                full_name: fullName, 
+                updated_at: new Date().toISOString() 
+            });
+
+        if (error) throw error;
+
+        document.getElementById('profile-name-display').innerText = fullName || 'User';
+        showToast("Profile updated successfully!");
+    } catch (err) {
+        alert("Update failed: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">save</span> Save Changes';
+    }
+}
+
 window.exportReportsToCSV = () => {
     if (!monthlyGroupsCache || Object.keys(monthlyGroupsCache).length === 0) {
         alert("No data available to export.");
@@ -894,9 +958,9 @@ function initRealtimeSubscription(user) {
             { event: '*', schema: 'public', table: 'documents' }, 
             () => {
                 if (currentUserRole === 'admin') {
-                    renderAdminDashboard();
+                    renderAdminDashboard(true); // Silent refresh on realtime change
                 } else {
-                    renderClientDashboard(user.id);
+                    renderClientDashboard(user.id, true); // Silent refresh on realtime change
                 }
             })
         .subscribe();
@@ -933,11 +997,23 @@ async function showApp(user) {
 
     // Initialize realtime syncing
     initRealtimeSubscription(user);
+
+    // Start 2-second auto-refresh
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    autoRefreshInterval = setInterval(async () => {
+        if (currentSidebarView === 'documents') {
+            if (currentUserRole === 'admin') await renderAdminDashboard(true);
+            else await renderClientDashboard(user.id, true);
+        } else if (currentSidebarView === 'dashboard') {
+            await updateStatsDashboard();
+        }
+    }, 2000);
 }
 
 function showAuth() {
     authContainer.classList.remove('hidden');
     appContainer.classList.add('hidden');
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     // Ensure we default to the login view when showing auth
     loginView.classList.remove('hidden');
     signupView.classList.add('hidden');
@@ -950,13 +1026,14 @@ function calculateAging(createdAt) {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-async function renderAdminDashboard() {
+async function renderAdminDashboard(isSilent = false) {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
     
     const tbody = document.querySelector('#admin-doc-table tbody');
-    // Show loading state
-    tbody.innerHTML = `
+    // Only show loading state if not a silent background refresh
+    if (!isSilent) {
+        tbody.innerHTML = `
         <tr>
             <td colspan="8">
                 <div class="table-loader-content">
@@ -965,6 +1042,7 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>`;
+    }
 
     const adminPagination = document.getElementById('admin-pagination');
     adminPagination.innerHTML = '';
@@ -1090,13 +1168,14 @@ async function renderAdminDashboard() {
     renderPagination(count, currentAdminPage, 'admin');
 }
 
-async function renderClientDashboard(userId) {
+async function renderClientDashboard(userId, isSilent = false) {
     document.getElementById('client-view').classList.remove('hidden');
     document.getElementById('admin-view').classList.add('hidden');
 
     const container = document.getElementById('client-doc-list');
-    // Show loading state
-    container.innerHTML = `
+    // Only show loading state if not a silent background refresh
+    if (!isSilent) {
+        container.innerHTML = `
         <tr>
             <td colspan="8">
                 <div class="table-loader-content">
@@ -1105,6 +1184,7 @@ async function renderClientDashboard(userId) {
                 </div>
             </td>
         </tr>`;
+    }
 
 
     const clientPagination = document.getElementById('client-pagination');
