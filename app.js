@@ -598,12 +598,12 @@ async function renderAdminDashboard() {
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
 
-    if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing');
-    } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised');
-    } else if (currentAdminTab === 'completed') {
+    if (currentAdminTab === 'completed') {
         query = query.eq('final_status', 'Completed');
+    } else if (currentAdminTab === 'submitted') {
+        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
+    } else if (currentAdminTab === 'returned') {
+        query = query.eq('status', 'Revised').neq('final_status', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -685,12 +685,12 @@ async function renderClientDashboard(userId) {
         .select('*')
         .eq('owner_id', userId);
 
-    if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing');
-    } else if (currentClientTab === 'completed') {
+    if (currentClientTab === 'completed') {
         query = query.eq('final_status', 'Completed');
+    } else if (currentClientTab === 'submitted') {
+        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
     } else { // active
-        query = query.not('status', 'eq', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+        query = query.neq('status', 'Adjusted - for Routing').neq('final_status', 'Completed').neq('status', 'Cancelled');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -739,10 +739,12 @@ async function renderClientDashboard(userId) {
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
+                    <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
+                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
-                    <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
+                    <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin"
+                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">send</span>
                     </button>
                 </div>
@@ -753,41 +755,53 @@ async function renderClientDashboard(userId) {
 
 // Global function for admin actions
 window.updateStatus = async (id, status) => {
-    const { error } = await supabaseClient
-        .from('documents')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-    
-    if (!error) {
-        showToast(`Document ${status}`);
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        // Clear cached role on status update to ensure UI remains synced
-        currentUserRole = null; 
-        showApp(user);
+    try {
+        const { error } = await supabaseClient
+            .from('documents')
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        
+        if (error) throw error;
+
+        showToast(`Status updated to: ${status}`);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) showApp(session.user);
+    } catch (err) {
+        alert("Update failed: " + err.message);
     }
 };
 
 window.submitToAdmin = async (id) => {
-    // Set the tab to 'submitted' so the document "moves" in the UI immediately
+    if(!confirm("Are you sure you want to submit this document for review?")) return;
     currentClientTab = 'submitted';
     await updateStatus(id, 'Adjusted - for Routing');
 };
 
 window.receiveDocument = async (id) => {
-    // Set the tab to 'completed' for admin view
     currentAdminTab = 'completed';
     await updateFinalStatus(id, 'Completed');
 };
 
+// New function for Admin to return document to Client
+window.returnToClient = async (id) => {
+    if(!confirm("Return this document to the client for revision?")) return;
+    currentAdminTab = 'returned';
+    await updateStatus(id, 'Revised');
+};
+
 window.updateFinalStatus = async (id, final_status) => {
-    const { error } = await supabaseClient
-        .from('documents')
-        .update({ final_status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-    
-    if (!error) {
+    try {
+        const { error } = await supabaseClient
+            .from('documents')
+            .update({ final_status, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        
+        if (error) throw error;
+
         showToast(`Final Status: ${final_status}`);
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        showApp(user);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) showApp(session.user);
+    } catch (err) {
+        alert("Status update failed: " + err.message);
     }
 };
