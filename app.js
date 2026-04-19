@@ -126,6 +126,7 @@ const reasonDescInput = document.getElementById('doc-reason-desc');
 const reasonCodeSelect = document.getElementById('doc-reason-code');
 const controlNoInput = document.getElementById('doc-control-no');
 const adjTypeSelect = document.getElementById('doc-adj-type');
+const amountRangeSelect = document.getElementById('doc-amount-range');
 
 categorySelect?.addEventListener('change', (e) => {
     const isIAAF = e.target.value === 'IAAF';
@@ -134,11 +135,7 @@ categorySelect?.addEventListener('change', (e) => {
     controlNoInput.required = isIAAF;
     reasonCodeSelect.required = isIAAF;
     if (adjTypeSelect) adjTypeSelect.required = isIAAF;
-
-    if (isIAAF && !controlNoInput.value) {
-        const year = new Date().getFullYear();
-        controlNoInput.value = `ECOM-${year}-0000`;
-    }
+    if (amountRangeSelect) amountRangeSelect.required = isIAAF;
 });
 
 reasonCodeSelect?.addEventListener('change', (e) => {
@@ -170,9 +167,16 @@ addDocForm?.addEventListener('submit', async (e) => {
     const ownerName = document.getElementById('doc-owner-name').value;
     
     // IAAF specific values
-    const controlNo = document.getElementById('doc-control-no').value;
+    let controlNo = document.getElementById('doc-control-no').value;
+    if (category === 'IAAF') {
+        const currentYear = new Date().getFullYear();
+        // Construct full control number: ECOM-YYYY-XXXX
+        controlNo = `ECOM-${currentYear}-${controlNo}`;
+    }
+
     const adjType = document.getElementById('doc-adj-type').value;
     const reasonCode = document.getElementById('doc-reason-code').value;
+    const amountRange = document.getElementById('doc-amount-range').value;
 
     if (title.length < 3) {
         alert("Title must be at least 3 characters long.");
@@ -209,6 +213,7 @@ addDocForm?.addEventListener('submit', async (e) => {
             insertData.adj_type = adjType;
             insertData.reason_code = reasonCode;
             insertData.reason_description = REASON_DESC_MAP[reasonCode];
+            insertData.amount_range = amountRange;
         }
 
         const { error } = await supabaseClient
@@ -429,7 +434,7 @@ async function renderAdminDashboard() {
         <tr>
             <td>
                 <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}</div>` : ''}
+                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}</div>` : ''}
             </td>
             <td>${doc.owner_name || 'N/A'}</td>
             <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
@@ -490,6 +495,7 @@ async function renderClientDashboard(userId) {
                 <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
                 ${doc.category === 'IAAF' ? `
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
+                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Amount: ${doc.amount_range || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
                 ` : ''}
