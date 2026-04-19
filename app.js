@@ -560,11 +560,11 @@ async function renderAdminDashboard() {
         
         return `
         <tr>
-            <td>
+            <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}${doc.charge_to ? ` | ${doc.charge_to}` : ''}</div>` : ''}
             </td>
-            <td>${doc.owner_name || 'N/A'}</td>
+            <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
