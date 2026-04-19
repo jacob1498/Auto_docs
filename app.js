@@ -20,12 +20,22 @@ let currentAdminTab = 'all';
 // Tab Switching Logic
 window.switchClientTab = async (tab) => {
     currentClientTab = tab;
+    
+    // Reset the global status filter to prevent conflicts with tab-specific logic
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderClientDashboard(session.user.id);
 };
 
 window.switchAdminTab = async (tab) => {
     currentAdminTab = tab;
+
+    // Reset the global status filter to prevent conflicts with tab-specific logic
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderAdminDashboard();
 };
@@ -783,10 +793,20 @@ window.updateStatus = async (id, status) => {
 };
 
 window.submitToAdmin = async (id) => {
+    // Set the tab to 'submitted' so the document "moves" in the UI immediately
+    currentClientTab = 'submitted';
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     await updateStatus(id, 'Adjusted - for Routing');
 };
 
 window.receiveDocument = async (id) => {
+    // Set the tab to 'completed' for admin view
+    currentAdminTab = 'completed';
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     await updateFinalStatus(id, 'Completed');
 };
 
