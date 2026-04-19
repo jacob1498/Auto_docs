@@ -122,8 +122,10 @@
                             <th>Owner Name</th>
                             <th>Category</th>
                             <th>Created By</th>
+                            <th>Aging</th>
                             <th>Status</th>
                             <th>Final Status</th>
+                            <th>Last Updated</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -195,6 +197,32 @@
                     </div>
                 </div>
 
+                <!-- Tracking Details -->
+                <h3 class="section-title">Tracking Details</h3>
+                <div class="modal-grid" style="margin-bottom: 1.5rem;">
+                    <div class="field-group">
+                        <label for="doc-period">
+                            <span class="material-symbols-outlined">calendar_month</span>
+                            Period
+                        </label>
+                        <input type="text" id="doc-period" placeholder="e.g. P1" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="doc-week">
+                            <span class="material-symbols-outlined">date_range</span>
+                            Week
+                        </label>
+                        <input type="number" id="doc-week" placeholder="1-52" min="1" max="52" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="doc-date">
+                            <span class="material-symbols-outlined">event</span>
+                            Document Date
+                        </label>
+                        <input type="date" id="doc-date" required>
+                    </div>
+                </div>
+
                 <!-- 3rd: Subject / Reason (Title) -->
                 <div class="field-group">
                     <div class="label-row">
@@ -249,6 +277,20 @@
                                 <option value="₱11k - ₱50k">₱11k - ₱50k</option>
                                 <option value="₱51k - ₱100k">₱51k - ₱100k</option>
                                 <option value="₱100k - ₱500k">₱100k - ₱500k</option>
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <label for="doc-charge-to">
+                                <span class="material-symbols-outlined">local_shipping</span>
+                                Charge To
+                            </label>
+                            <select id="doc-charge-to">
+                                <option value="">Select Entity</option>
+                                <option value="DC">DC</option>
+                                <option value="ECOM">ECOM</option>
+                                <option value="RED DOT">RED DOT</option>
+                                <option value="FAST">FAST</option>
+                                <option value="OTHER 3PL">OTHER 3PL</option>
                             </select>
                         </div>
                         <div class="field-group" style="grid-column: span 2;">
