@@ -898,8 +898,8 @@ window.updateStatus = async (id, status, customMsg = null) => {
         
         // Targeted refresh instead of full app reset
         const { data: sessionData } = await supabaseClient.auth.getSession();
-        if (sessionData?.session?.user) {
-            const user = sessionData.session.user;
+        const user = sessionData?.session?.user;
+        if (user) {
             // Use metadata as fallback if local role variable is not set
             const role = currentUserRole || user.user_metadata?.role;
             if (role === 'admin') {
@@ -909,16 +909,23 @@ window.updateStatus = async (id, status, customMsg = null) => {
             }
             if (currentSidebarView === 'dashboard') await updateStatsDashboard();
         }
+        return true; // Return success status
     } catch (err) {
         alert("Update failed: " + err.message);
+        return false;
     }
 };
 
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
-    currentClientTab = 'submitted'; // Switch UI tab before update triggers re-render
-    currentClientPage = 0; // Reset to first page
-    await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
+    
+    // 1. Perform the update first
+    const success = await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
+    
+    // 2. Only switch the tab visually if the database update actually worked
+    if (success) {
+        await switchClientTab('submitted');
+    }
 };
 
 window.receiveDocument = async (id) => {
