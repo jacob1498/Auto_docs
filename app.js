@@ -40,7 +40,7 @@ window.switchAdminTab = async (tab) => {
 };
 
 // Sidebar Navigation Switching
-function switchSidebarView(viewName) {
+async function switchSidebarView(viewName) {
     currentSidebarView = viewName;
     
     // Update Active Nav State
@@ -59,7 +59,7 @@ function switchSidebarView(viewName) {
     } else if (viewName === 'documents') {
         statsView.classList.add('hidden');
         // The actual role-based rendering happens in showApp or re-renders
-        const { data: { session } } = supabaseClient.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             const user = session.user;
             if (user.user_metadata?.role === 'admin' || currentUserRole === 'admin') {
