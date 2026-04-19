@@ -771,7 +771,7 @@ async function renderClientDashboard(userId) {
     } else if (currentClientTab === 'submitted') {
         query = query.eq('status', 'Submitted');
     } else { // active
-        query = query.not('status', 'in', '("Submitted","Completed")');
+        query = query.not('status', 'in', ['Submitted', 'Completed']);
     }
 
     const from = currentClientPage * PAGE_SIZE;
@@ -880,8 +880,16 @@ window.updateStatus = async (id, status, customMsg = null) => {
 
         showToast(customMsg || `Status updated: ${status}`);
         
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) showApp(session.user);
+        // Targeted refresh instead of full app reset
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            if (currentUserRole === 'admin') {
+                await renderAdminDashboard();
+            } else {
+                await renderClientDashboard(user.id);
+            }
+            if (currentSidebarView === 'dashboard') await updateStatsDashboard();
+        }
     } catch (err) {
         alert("Update failed: " + err.message);
     }
