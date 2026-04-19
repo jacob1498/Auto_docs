@@ -14,8 +14,6 @@ const logoutBtn = document.getElementById('logout-btn');
 const userDisplay = document.getElementById('user-display');
 let currentUserRole = null;
 let editingId = null;
-let activeClientTab = 'active';
-let activeAdminTab = 'all';
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -133,7 +131,6 @@ const adjTypeSelect = document.getElementById('doc-adj-type');
 const amountRangeSelect = document.getElementById('doc-amount-range');
 const chargeToSelect = document.getElementById('doc-charge-to');
 const ownerSelect = document.getElementById('doc-owner-name');
-const statusSelect = document.getElementById('doc-status-select');
 const dateInput = document.getElementById('doc-date');
 
 categorySelect?.addEventListener('change', (e) => {
@@ -257,7 +254,6 @@ addDocForm?.addEventListener('submit', async (e) => {
     const title = document.getElementById('doc-title-input').value.trim();
     const category = document.getElementById('doc-category-select').value;
     const ownerName = document.getElementById('doc-owner-name').value;
-    const status = document.getElementById('doc-status-select').value;
     
     // IAAF specific values
     let controlNo = document.getElementById('doc-control-no').value;
@@ -301,13 +297,13 @@ addDocForm?.addEventListener('submit', async (e) => {
             category, 
             owner_name: ownerName,
             period,
-            status: status,
             week: week ? parseInt(week) : null,
             doc_date: docDate || null
         };
 
         if (!editingId) {
             insertData.owner_id = user.id;
+            insertData.status = 'For Adjustment - for Routing';
             insertData.final_status = 'Pending';
         }
 
@@ -379,7 +375,6 @@ window.editDocument = async (id) => {
     document.getElementById('doc-title-input').value = doc.title;
     document.getElementById('doc-category-select').value = doc.category;
     document.getElementById('doc-owner-name').value = doc.owner_name;
-    document.getElementById('doc-status-select').value = doc.status;
     document.getElementById('doc-date').value = doc.doc_date;
     
     const isIAAF = doc.category === 'IAAF';
@@ -585,18 +580,6 @@ async function renderAdminDashboard() {
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
-    // Sync Admin Tab UI
-    const tabAll = document.getElementById('admin-tab-all');
-    const tabSubmitted = document.getElementById('admin-tab-submitted');
-    const tabReturned = document.getElementById('admin-tab-returned');
-    const tabCompleted = document.getElementById('admin-tab-completed');
-    if (tabAll && tabSubmitted && tabReturned && tabCompleted) {
-        tabAll.classList.toggle('active', activeAdminTab === 'all');
-        tabSubmitted.classList.toggle('active', activeAdminTab === 'submitted');
-        tabReturned.classList.toggle('active', activeAdminTab === 'returned');
-        tabCompleted.classList.toggle('active', activeAdminTab === 'completed');
-    }
-
     let query = supabaseClient
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
@@ -625,76 +608,24 @@ async function renderAdminDashboard() {
         return;
     }
 
-    // Filter by Tab
-    const filteredByTab = (docs || []).filter(doc => {
-        const isSubmitted = doc.final_status === 'Submitted';
-        const isReturned = doc.status === 'Revised' && doc.return_reason;
-        const isCompleted = doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
-
-        if (activeAdminTab === 'submitted') {
-            // Show only documents waiting for review
-            return doc.final_status === 'Submitted';
-            return isSubmitted;
-        }
-        if (activeAdminTab === 'returned') {
-            // Show only documents that have been returned to the client
-            return doc.status === 'Revised' && doc.return_reason;
-            return isReturned;
-        }
-        if (activeAdminTab === 'completed') {
-            // Show only completed or cancelled documents
-            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
-            return isCompleted;
-        }
-        return true; // "All" tab shows everything
-        
-        // "All Monitoring" now shows items that haven't moved to other workflow buckets
-        return !isSubmitted && !isReturned && !isCompleted;
-    });
-
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
-        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> Total Records: ${filteredByTab.length}`;
+        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> Total Records: ${docs.length}`;
     }
 
     const tbody = document.querySelector('#admin-doc-table tbody');
-    tbody.innerHTML = (filteredByTab && filteredByTab.length > 0) ? filteredByTab.map(doc => {
+    tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
-        const returnReasonHtml = doc.return_reason ? `<div style="color: var(--warning); font-size: 0.75rem; font-weight: 500; margin-top: 4px;">Reason: ${doc.return_reason}</div>` : '';
-        
-        // Final status options: Admin cannot manually set a document to "Submitted"
-        // We only show "Submitted" in the dropdown if it is currently in that state
-        const finalStatusOptions = `
-            <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
-            ${doc.final_status === 'Submitted' ? '<option value="Submitted" selected>Submitted</option>' : ''}
-            <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
-            <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-        `;
-
-        // Show Receive and Return buttons if document has been submitted
-        const showReceiveBtn = doc.final_status === 'Submitted';
-        const receiveBtnHtml = showReceiveBtn ? `
-            <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Received">
-                <span class="material-symbols-outlined" style="color: var(--success)">check_circle</span>
-            </button>
-        ` : '';
-
-        const returnBtnHtml = showReceiveBtn ? `
-            <button class="icon-btn" onclick="returnToClient('${doc.id}')" title="Return to Client">
-                <span class="material-symbols-outlined" style="color: var(--warning)">undo</span>
-            </button>
-        ` : '';
         
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
-                ${returnReasonHtml}
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
@@ -704,18 +635,15 @@ async function renderAdminDashboard() {
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Submitted" ${doc.final_status === 'Submitted' ? 'selected' : ''}>Submitted</option>
                     <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
                     <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                    ${finalStatusOptions}
                 </select>
             </td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
-                    ${receiveBtnHtml}
-                    ${returnBtnHtml}
+                    <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Received"><span class="material-symbols-outlined">check_circle</span></button>
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
@@ -723,26 +651,11 @@ async function renderAdminDashboard() {
     `}).join('') : '<tr><td colspan="9" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
 }
 
-window.switchAdminTab = (tab) => {
-    activeAdminTab = tab;
-    refreshDashboard();
-};
-
 async function renderClientDashboard(userId) {
     document.getElementById('client-view').classList.remove('hidden');
     document.getElementById('admin-view').classList.add('hidden');
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
-
-    // Sync Tab UI
-    const tabActive = document.getElementById('client-tab-active');
-    const tabSubmitted = document.getElementById('client-tab-submitted');
-    const tabCompleted = document.getElementById('client-tab-completed');
-    if (tabActive && tabSubmitted && tabCompleted) {
-        tabActive.classList.toggle('active', activeClientTab === 'active');
-        tabSubmitted.classList.toggle('active', activeClientTab === 'submitted');
-        tabCompleted.classList.toggle('active', activeClientTab === 'completed');
-    }
 
     let query = supabaseClient
         .from('documents')
@@ -766,45 +679,22 @@ async function renderClientDashboard(userId) {
         return;
     }
 
-    // Filter by Tab
-    const filteredByTab = (docs || []).filter(doc => {
-        if (activeClientTab === 'submitted') {
-            return doc.final_status === 'Submitted';
-        }
-        if (activeClientTab === 'completed') {
-            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
-        }
-        // Active tab: Pending or empty final_status
-        return doc.final_status === 'Pending' || !doc.final_status;
-    });
-
-    if (filteredByTab.length === 0) {
+    if (!docs || docs.length === 0) {
         container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
-    container.innerHTML = filteredByTab.map(doc => {
+    container.innerHTML = docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
-        const returnReasonHtml = doc.return_reason ? `<div style="color: var(--warning); font-size: 0.75rem; font-weight: 500; margin-top: 4px;">Reason: ${doc.return_reason}</div>` : '';
-
-        // Show Submit button only if status includes 'Routing' and it's currently in Pending state (not yet submitted)
-        const statusText = doc.status || '';
-        const canSubmit = statusText.includes('Routing') && (doc.final_status === 'Pending' || !doc.final_status);
-        const submitBtnHtml = canSubmit ? `
-            <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
-                <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--primary)">send</span>
-            </button>
-        ` : '';
 
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
-                ${returnReasonHtml}
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
@@ -817,7 +707,7 @@ async function renderClientDashboard(userId) {
                     <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
             </td>
-            <td><span class="badge ${doc.final_status || 'Pending'}">${doc.final_status === 'Submitted' ? 'Pending-Submitted' : (doc.final_status || 'Pending')}</span></td>
+            <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
@@ -825,17 +715,14 @@ async function renderClientDashboard(userId) {
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
-                    ${submitBtnHtml}
+                    <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">send</span>
+                    </button>
                 </div>
             </td>
         </tr>
     `}).join('');
 }
-
-window.switchClientTab = (tab) => {
-    activeClientTab = tab;
-    refreshDashboard();
-};
 
 // Global function for admin actions
 window.updateStatus = async (id, status) => {
@@ -846,62 +733,19 @@ window.updateStatus = async (id, status) => {
     
     if (!error) {
         showToast(`Document ${status}`);
-        // Refresh UI using current session
-        refreshDashboard();
-    } else {
-        alert("Failed to update status: " + error.message);
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        // Clear cached role on status update to ensure UI remains synced
+        currentUserRole = null; 
+        showApp(user);
     }
 };
 
 window.submitToAdmin = async (id) => {
-    const { error } = await supabaseClient
-        .from('documents')
-        .update({ 
-            status: 'Adjusted - for Routing',
-            final_status: 'Submitted',
-            return_reason: null,
-            updated_at: new Date().toISOString() 
-        })
-        .eq('id', id);
-    
-    if (!error) {
-        showToast("Document Submitted to Admin");
-        activeClientTab = 'submitted'; // Move to the Submitted tab automatically
-        refreshDashboard();
-    } else {
-        alert("Failed to submit document: " + error.message);
-    }
+    await updateStatus(id, 'Adjusted - for Routing');
 };
 
 window.receiveDocument = async (id) => {
     await updateFinalStatus(id, 'Completed');
-};
-
-window.returnToClient = async (id) => {
-    const reason = prompt("Please provide a reason for returning this document to the client:");
-    
-    if (reason === null) return; // User cancelled the prompt
-    if (!reason.trim()) {
-        alert("A return reason is required.");
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from('documents')
-        .update({ 
-            status: 'Revised',
-            final_status: 'Pending',
-            return_reason: reason.trim(),
-            updated_at: new Date().toISOString() 
-        })
-        .eq('id', id);
-    
-    if (!error) {
-        showToast("Document returned to client for revision");
-        refreshDashboard();
-    } else {
-        alert("Failed to return document: " + error.message);
-    }
 };
 
 window.updateFinalStatus = async (id, final_status) => {
@@ -912,14 +756,7 @@ window.updateFinalStatus = async (id, final_status) => {
     
     if (!error) {
         showToast(`Final Status: ${final_status}`);
-        refreshDashboard();
-    } else {
-        alert("Failed to update final status: " + error.message);
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        showApp(user);
     }
 };
-
-// Helper to refresh without re-fetching roles unnecessarily
-async function refreshDashboard() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (user) showApp(user);
-}
