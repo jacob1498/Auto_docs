@@ -156,7 +156,10 @@
                 <div class="modal-grid">
                     <!-- 1st: Category -->
                     <div class="field-group">
-                        <label for="doc-category-select">Document Category</label>
+                        <label for="doc-category-select">
+                            <span class="material-symbols-outlined">category</span>
+                            Document Category
+                        </label>
                         <select id="doc-category-select" required>
                             <option value="IR">IR</option>
                             <option value="IAAF">IAAF</option>
@@ -165,7 +168,10 @@
 
                     <!-- Owner Name Selection -->
                     <div class="field-group">
-                        <label for="doc-owner-name">Owner Name</label>
+                        <label for="doc-owner-name">
+                            <span class="material-symbols-outlined">person</span>
+                            Owner Name
+                        </label>
                         <select id="doc-owner-name" required>
                             <option value="">Select Owner</option>
                             <option value="Jaime">Jaime</option>
@@ -181,15 +187,21 @@
 
                     <!-- 2nd: Control Number (IAAF only) -->
                     <div class="field-group iaaf-only hidden">
-                        <label for="doc-control-no">Control Number</label>
-                        <input type="text" id="doc-control-no" placeholder="ECOM-YYYY-0000" pattern="ECOM-[0-9]{4}-[0-9]{4}">
+                        <label for="doc-control-no">
+                            <span class="material-symbols-outlined">fingerprint</span>
+                            Control Number
+                        </label>
+                        <input type="text" id="doc-control-no" placeholder="e.g. 1213" pattern="[0-9]{4}" maxlength="4" title="Please enter the 4-digit series">
                     </div>
                 </div>
 
                 <!-- 3rd: Subject / Reason (Title) -->
                 <div class="field-group">
                     <div class="label-row">
-                        <label for="doc-title-input">Subject / Reason</label>
+                        <label for="doc-title-input">
+                            <span class="material-symbols-outlined">subject</span>
+                            Subject / Reason
+                        </label>
                         <span id="char-counter" class="char-counter">0 / 200</span>
                     </div>
                     <textarea id="doc-title-input" placeholder="Enter subject or reason..." required minlength="3" maxlength="200" rows="5"></textarea>
@@ -200,7 +212,10 @@
                     <h3 class="section-title">IAAF Details</h3>
                     <div class="modal-grid">
                         <div class="field-group">
-                            <label for="doc-adj-type">Adj Type</label>
+                            <label for="doc-adj-type">
+                                <span class="material-symbols-outlined">tune</span>
+                                Adj Type
+                            </label>
                             <select id="doc-adj-type">
                                 <option value="">Select Type</option>
                                 <option value="Write Back">Write Back</option>
@@ -209,7 +224,10 @@
                             </select>
                         </div>
                         <div class="field-group">
-                            <label for="doc-reason-code">Reason Code</label>
+                            <label for="doc-reason-code">
+                                <span class="material-symbols-outlined">pin</span>
+                                Reason Code
+                            </label>
                             <select id="doc-reason-code">
                                 <option value="">Select Code</option>
                                 <option value="13">13</option><option value="3">3</option>
@@ -219,8 +237,25 @@
                                 <option value="91">91</option>
                             </select>
                         </div>
+                        <div class="field-group">
+                            <label for="doc-amount-range">
+                                <span class="material-symbols-outlined">payments</span>
+                                Amount Range
+                            </label>
+                            <select id="doc-amount-range">
+                                <option value="">Select Range</option>
+                                <option value="₱0 - ₱5k">₱0 - ₱5k</option>
+                                <option value="₱6k - ₱10k">₱6k - ₱10k</option>
+                                <option value="₱11k - ₱50k">₱11k - ₱50k</option>
+                                <option value="₱51k - ₱100k">₱51k - ₱100k</option>
+                                <option value="₱100k - ₱500k">₱100k - ₱500k</option>
+                            </select>
+                        </div>
                         <div class="field-group" style="grid-column: span 2;">
-                            <label for="doc-reason-desc">Reason Description</label>
+                            <label for="doc-reason-desc">
+                                <span class="material-symbols-outlined">info</span>
+                                Reason Description
+                            </label>
                             <input type="text" id="doc-reason-desc" readonly class="readonly-input">
                         </div>
                     </div>
