@@ -562,12 +562,11 @@ async function renderAdminDashboard() {
         <tr>
             <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}${doc.charge_to ? ` | ${doc.charge_to}` : ''}</div>` : ''}
+                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''} | ${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}</div>` : ''}
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
-            <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
@@ -584,6 +583,7 @@ async function renderAdminDashboard() {
                 </select>
             </td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
+            <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit"><span class="material-symbols-outlined">edit</span></button>
@@ -627,15 +627,24 @@ async function renderClientDashboard(userId) {
         return;
     }
 
-    container.innerHTML = docs.map(doc => `
+    container.innerHTML = docs.map(doc => {
+        const aging = calculateAging(doc.created_at);
+        const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
+        const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
+
+        return `
         <tr>
+            <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
+                <div style="font-weight: 600;">${doc.title}</div>
+                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}</div>` : ''}
+            </td>
+            <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
-            <td style="font-weight: 600;">${doc.title}</td>
-            <td>${doc.owner_name || 'N/A'}</td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
-            <td><span class="badge ${calculateAging(doc.created_at) > 5 ? 'Cancelled' : 'Pending'}">${calculateAging(doc.created_at)} Days</span></td>
+            <td style="font-size: 0.75rem;">${updatedDate}</td>
+            <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
@@ -647,7 +656,7 @@ async function renderClientDashboard(userId) {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 // Global function for admin actions
