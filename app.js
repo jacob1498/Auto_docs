@@ -56,6 +56,7 @@ window.switchAdminTab = async (tab) => {
 // Sidebar Navigation Switching
 async function switchSidebarView(viewName) {
     currentSidebarView = viewName;
+    document.getElementById('no-results')?.classList.add('hidden');
     if (viewName === 'dashboard') clearSearchUI();
     
     // Update Active Nav State
@@ -945,10 +946,6 @@ async function renderAdminDashboard() {
         return;
     }
 
-    // Toggle global no-results display if no records match
-    const noResults = document.getElementById('no-results');
-    if (noResults) noResults.classList.toggle('hidden', docs && docs.length > 0);
-
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
@@ -958,7 +955,8 @@ async function renderAdminDashboard() {
     }
 
     const hasDocs = docs && docs.length > 0;
-    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs);
+    // Only show "No results found" if a search is active and returned no documents
+    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs || !currentSearchTerm);
     document.querySelector('#admin-view .table-container')?.classList.toggle('hidden', !hasDocs);
     document.getElementById('admin-pagination')?.classList.toggle('hidden', !hasDocs);
 
@@ -1060,8 +1058,8 @@ async function renderClientDashboard(userId) {
     }
 
     const hasDocs = docs && docs.length > 0;
-    // Toggle global no-results display if no records match
-    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs);
+    // Only show search empty state if a search term is present and no documents were found
+    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs || !currentSearchTerm);
     document.querySelector('#client-view .table-container')?.classList.toggle('hidden', !hasDocs);
     document.getElementById('client-pagination')?.classList.toggle('hidden', !hasDocs);
 
