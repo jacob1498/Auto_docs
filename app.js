@@ -316,11 +316,14 @@ addDocForm?.addEventListener('submit', async (e) => {
     try {
         // Check for duplicate control number if category is IAAF
         if (category === 'IAAF') {
-            const { data: existing } = await supabaseClient
+            let dupQuery = supabaseClient
                 .from('documents')
                 .select('id')
-                .eq('control_number', controlNo)
-                .maybeSingle();
+                .eq('control_number', controlNo);
+            
+            if (editingId) dupQuery = dupQuery.neq('id', editingId);
+            
+            const { data: existing } = await dupQuery.maybeSingle();
             if (existing) throw new Error("This Control Number already exists.");
         }
 
