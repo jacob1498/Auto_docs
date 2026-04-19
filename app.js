@@ -274,7 +274,7 @@ addDocForm?.addEventListener('submit', async (e) => {
                 .from('documents')
                 .select('id')
                 .eq('control_number', controlNo)
-                .single();
+                .maybeSingle();
             if (existing) throw new Error("This Control Number already exists.");
         }
 
@@ -472,7 +472,7 @@ async function showApp(user) {
             .from('profiles')
             .select('role')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
         
         if (profile && !error) {
             role = profile.role;
