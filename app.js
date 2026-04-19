@@ -839,6 +839,13 @@ window.updateStatus = async (id, status) => {
 };
 
 window.submitToAdmin = async (id) => {
+    // Reset search and filters to ensure the document is visible in the Submitted tab
+    const filterSelect = document.getElementById('filter-status');
+    const searchInput = document.getElementById('dashboard-search');
+    if (filterSelect) filterSelect.value = 'all';
+    if (searchInput) searchInput.value = '';
+    document.getElementById('clear-search')?.classList.add('hidden');
+
     const { error } = await supabaseClient
         .from('documents')
         .update({ 
