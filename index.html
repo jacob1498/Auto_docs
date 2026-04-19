@@ -1,483 +1,232 @@
-const SUPABASE_URL = 'https://ghfloompdoasrtpnjomo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZmxvb21wZG9hc3J0cG5qb21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzM2NzUsImV4cCI6MjA5MjEwOTY3NX0.i4G0bPcUPfYCBvTjCQBxPEJvh2HNbR1JCgxgYmXm6yc';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocTrack | Document Monitoring</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="auth-container">
+        <!-- Login View -->
+        <section id="login-view" class="card">
+            <h2>Login</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+            <p class="toggle-msg">Don't have an account? <span class="toggle-link" id="go-to-signup">Sign Up</span></p>
+        </section>
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// DOM Elements
-const authContainer = document.getElementById('auth-container');
-const appContainer = document.getElementById('app-container');
-const loginView = document.getElementById('login-view');
-const signupView = document.getElementById('signup-view');
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
-const logoutBtn = document.getElementById('logout-btn');
-const userDisplay = document.getElementById('user-display');
-
-// View Toggling
-document.getElementById('go-to-signup').addEventListener('click', () => {
-    loginView.classList.add('hidden');
-    signupView.classList.remove('hidden');
-});
-
-document.getElementById('go-to-login').addEventListener('click', () => {
-    signupView.classList.add('hidden');
-    loginView.classList.remove('hidden');
-});
-
-// Mobile Sidebar Toggle
-document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('active');
-});
-
-// Global Search Functionality
-let searchTimeout;
-document.getElementById('dashboard-search')?.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase();
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
-        let visibleCount = 0;
-
-        items.forEach(item => {
-            const text = item.innerText.toLowerCase();
-            const matches = text.includes(term);
-            item.style.display = matches ? '' : 'none';
-            if (matches) visibleCount++;
-        });
-
-        const noResults = document.getElementById('no-results');
-        if (noResults) {
-            noResults.classList.toggle('hidden', visibleCount > 0 || items.length === 0);
-        }
-    }, 300);
-});
-
-document.getElementById('clear-search')?.addEventListener('click', () => {
-    const searchInput = document.getElementById('dashboard-search');
-    const clearBtn = document.getElementById('clear-search');
-    
-    if (searchInput) {
-        searchInput.value = '';
-        searchInput.focus();
-        
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
-        items.forEach(item => item.style.display = '');
-        
-        document.getElementById('no-results')?.classList.add('hidden');
-        clearBtn?.classList.add('hidden');
-    }
-});
-
-// Sort Functionality
-document.getElementById('sort-date')?.addEventListener('change', async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) showApp(session.user);
-});
-
-// Filter Functionality
-document.getElementById('filter-status')?.addEventListener('change', async () => {
-    const searchInput = document.getElementById('dashboard-search');
-    if (searchInput) searchInput.value = '';
-    document.getElementById('clear-search')?.classList.add('hidden');
-
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) showApp(session.user);
-});
-
-// Reset All Filters
-document.getElementById('reset-filters')?.addEventListener('click', async () => {
-    const searchInput = document.getElementById('dashboard-search');
-    const sortSelect = document.getElementById('sort-date');
-    const filterSelect = document.getElementById('filter-status');
-    const clearSearchBtn = document.getElementById('clear-search');
-    const noResults = document.getElementById('no-results');
-
-    if (searchInput) searchInput.value = '';
-    if (sortSelect) sortSelect.value = 'desc';
-    if (filterSelect) filterSelect.value = 'all';
-    if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
-    if (noResults) noResults.classList.add('hidden');
-
-    // Refresh data with default settings
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) showApp(session.user);
-});
-
-// Reason Code Mapping
-const REASON_DESC_MAP = {
-    "13": "Cycle Count",
-    "3": "Wrong received",
-    "93": "B1T1 / Manual Picked",
-    "83": "LBR to customer",
-    "90": "Missing Items (Overages if Writeback)",
-    "10": "Damaged",
-    "9": "Expired",
-    "70": "Marketing Expense (Return Refund)",
-    "91": "SKU conversion"
-};
-
-// Modal Logic
-const modalOverlay = document.getElementById('modal-overlay');
-const addDocForm = document.getElementById('add-doc-form');
-const docTitleInput = document.getElementById('doc-title-input');
-const charCounter = document.getElementById('char-counter');
-const categorySelect = document.getElementById('doc-category-select');
-const reasonDescInput = document.getElementById('doc-reason-desc');
-const controlNoInput = document.getElementById('doc-control-no');
-const adjTypeSelect = document.getElementById('doc-adj-type');
-
-categorySelect?.addEventListener('change', (e) => {
-    const isIAAF = e.target.value === 'IAAF';
-    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
-    // Toggle required attributes for IAAF fields
-    controlNoInput.required = isIAAF;
-    reasonCodeSelect.required = isIAAF;
-    if (adjTypeSelect) adjTypeSelect.required = isIAAF;
-});
-
-reasonCodeSelect?.addEventListener('change', (e) => {
-    reasonDescInput.value = REASON_DESC_MAP[e.target.value] || '';
-});
-
-document.getElementById('upload-trigger')?.addEventListener('click', () => {
-    modalOverlay.classList.remove('hidden');
-    docTitleInput.focus();
-});
-
-document.getElementById('close-modal')?.addEventListener('click', () => {
-    modalOverlay.classList.add('hidden');
-    addDocForm.reset();
-    if (charCounter) charCounter.innerText = '0 / 50';
-    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
-});
-
-docTitleInput?.addEventListener('input', (e) => {
-    const length = e.target.value.length;
-    if (charCounter) charCounter.innerText = `${length} / 50`;
-});
-
-addDocForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const title = document.getElementById('doc-title-input').value.trim();
-    const category = document.getElementById('doc-category-select').value;
-    
-    // IAAF specific values
-    const controlNo = document.getElementById('doc-control-no').value;
-    const adjType = document.getElementById('doc-adj-type').value;
-    const reasonCode = document.getElementById('doc-reason-code').value;
-
-    if (title.length < 3) {
-        alert("Title must be at least 3 characters long.");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Creating...';
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    try {
-        const insertData = { 
-            title, 
-            category, 
-            owner_id: user.id, 
-            status: 'pending' 
-        };
-
-        if (category === 'IAAF') {
-            insertData.control_number = controlNo;
-            insertData.adj_type = adjType;
-            insertData.reason_code = reasonCode;
-            insertData.reason_description = REASON_DESC_MAP[reasonCode];
-        }
-
-        const { error } = await supabaseClient
-            .from('documents')
-            .insert([insertData]);
-
-        if (error) throw error;
-
-        modalOverlay.classList.add('hidden');
-        addDocForm.reset();
-        if (charCounter) charCounter.innerText = '0 / 50';
-        document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
-        showToast("Document added successfully!");
-        showApp(user);
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Create Document";
-    }
-});
-
-// Confirmation Modal Logic
-let documentIdToDelete = null;
-const confirmModal = document.getElementById('confirm-modal-overlay');
-
-window.deleteDocument = (id) => {
-    documentIdToDelete = id;
-    confirmModal.classList.remove('hidden');
-};
-
-document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
-    confirmModal.classList.add('hidden');
-    documentIdToDelete = null;
-});
-
-document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => {
-    if (!documentIdToDelete) return;
-    
-    const btn = document.getElementById('confirm-delete-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Deleting...';
-
-    try {
-        const { error } = await supabaseClient
-            .from('documents')
-            .delete()
-            .eq('id', documentIdToDelete);
-        
-        if (error) throw error;
-
-        confirmModal.classList.add('hidden');
-        showToast("Document deleted successfully");
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        showApp(user);
-    } catch (err) {
-        alert("Error deleting document: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Delete";
-        documentIdToDelete = null;
-    }
-});
-
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    const toastMsg = document.getElementById('toast-message');
-    toastMsg.innerText = message;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
-}
-
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', (e) => {
-    const sidebar = document.getElementById('sidebar');
-    const toggle = document.getElementById('sidebar-toggle');
-    if (window.innerWidth <= 768 && 
-        !sidebar.contains(e.target) && 
-        !toggle.contains(e.target) && 
-        sidebar.classList.contains('active')) {
-        sidebar.classList.remove('active');
-    }
-});
-
-// 1. Auth Listener
-supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (session) {
-        showApp(session.user);
-    } else {
-        showAuth();
-    }
-});
-
-// 2. Handle Authentication
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button');
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Signing In...';
-
-    try {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Sign In";
-    }
-});
-
-signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button');
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    const role = document.getElementById('signup-role').value;
-
-    if (password.length < 6) {
-        alert("Password must be at least 6 characters long.");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Creating Account...';
-
-    try {
-        const { data, error } = await supabaseClient.auth.signUp({ 
-            email, 
-            password,
-            options: { data: { role } }
-        });
-
-        if (error) throw error;
-        
-        if (data.user) {
-            // Background attempt to create profile record - capture error so it doesn't block UI
-            const { error: pError } = await supabaseClient.from('profiles').insert([{ id: data.user.id, role }]);
-            if (pError) console.warn("Profile table insert deferred (usually RLS/Confirmation issue):", pError.message);
-
-            if (!data.session) {
-                alert("Account created successfully! Please check your email inbox to confirm your account before logging in.");
-                document.getElementById('go-to-login').click();
-            } else {
-                // If confirmation is off, the auth listener will fire, but we'll trigger showApp manually to be safe
-                showApp(data.user);
-            }
-        }
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Sign Up";
-    }
-});
-
-// 3. Handle Logout
-logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
-
-async function showApp(user) {
-    authContainer.classList.add('hidden');
-    appContainer.classList.remove('hidden');
-    userDisplay.innerText = `Logged in as: ${user.email}`;
-
-    let role = user.user_metadata?.role;
-
-    try {
-        // Try to get the latest role from the database
-        const { data: profile, error } = await supabaseClient
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-        
-        if (profile && !error) {
-            role = profile.role;
-        }
-    } catch (err) {
-        console.warn("Profile table fetch failed, falling back to metadata.", err);
-    }
-
-    if (role === 'admin') {
-        await renderAdminDashboard();
-    } else {
-        await renderClientDashboard(user.id);
-    }
-}
-
-function showAuth() {
-    authContainer.classList.remove('hidden');
-    appContainer.classList.add('hidden');
-    // Ensure we default to the login view when showing auth
-    loginView.classList.remove('hidden');
-    signupView.classList.add('hidden');
-}
-
-async function renderAdminDashboard() {
-    document.getElementById('admin-view').classList.remove('hidden');
-    document.getElementById('client-view').classList.add('hidden');
-    const sortBy = document.getElementById('sort-date').value;
-    const filterStatus = document.getElementById('filter-status').value;
-
-    let query = supabaseClient
-        .from('documents')
-        .select(`*, profiles(email)`);
-
-    if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-    }
-
-    const { data: docs } = await query.order('created_at', { ascending: sortBy === 'asc' });
-
-    const tbody = document.querySelector('#admin-doc-table tbody');
-    tbody.innerHTML = docs ? docs.map(doc => `
-        <tr>
-            <td>
-                <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}</div>` : ''}
-            </td>
-            <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
-            <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
-            <td><span class="badge ${doc.status}">${doc.status}</span></td>
-            <td>
-                <div class="action-btns">
-                    <button onclick="updateStatus('${doc.id}', 'approved')" style="background: var(--primary); color: white;">Approve</button>
-                    <button class="btn-danger" onclick="deleteDocument('${doc.id}')">Delete</button>
+        <!-- Sign Up View -->
+        <section id="signup-view" class="card hidden">
+            <h2>Create Account</h2>
+            <form id="signup-form">
+                <input type="email" id="signup-email" placeholder="Email" required>
+                <input type="password" id="signup-password" placeholder="Password" required>
+                <div class="field-group">
+                    <label>Register as:</label>
+                    <select id="signup-role">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
                 </div>
-            </td>
-        </tr>
-    `).join('') : '';
-}
+                <button type="submit" class="auth-btn">Sign Up</button>
+            </form>
+            <p class="toggle-msg">Already have an account? <span class="toggle-link" id="go-to-login">Login</span></p>
+        </section>
+    </div>
 
-async function renderClientDashboard(userId) {
-    document.getElementById('client-view').classList.remove('hidden');
-    document.getElementById('admin-view').classList.add('hidden');
-    const sortBy = document.getElementById('sort-date').value;
-    const filterStatus = document.getElementById('filter-status').value;
+    <div id="app-container" class="hidden">
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-brand">DocTrack</div>
+            <nav class="side-nav">
+                <a href="#" class="nav-item active">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">description</span>
+                    My Documents
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">analytics</span>
+                    Reports
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+            </nav>
+            <div class="sidebar-user">
+                <p id="user-display"></p>
+                <button id="logout-btn" class="logout-btn-alt">Logout</button>
+            </div>
+        </aside>
 
-    let query = supabaseClient
-        .from('documents')
-        .select('*')
-        .eq('owner_id', userId);
-
-    if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-    }
-
-    const { data: docs } = await query.order('created_at', { ascending: sortBy === 'asc' });
-
-    const container = document.getElementById('client-doc-list');
-    container.innerHTML = docs ? docs.map(doc => `
-        <div class="doc-card">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div class="doc-icon">
-                    <span class="material-symbols-outlined">${doc.category === 'IAAF' ? 'account_balance' : (doc.category === 'IR' ? 'analytics' : 'description')}</span>
+        <div class="main-wrapper">
+            <header class="mobile-header">
+                <button id="sidebar-toggle" class="icon-btn">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="mobile-brand">DocTrack</div>
+            </header>
+            <main>
+                <div class="top-bar">
+                    <div class="search-box">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" id="dashboard-search" placeholder="Search documents...">
+                        <button id="clear-search" class="clear-btn hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="sort-box">
+                        <select id="sort-date">
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
+                    <div class="filter-box">
+                        <select id="filter-status">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                        </select>
+                    </div>
+                    <button id="reset-filters" class="reset-btn" title="Reset all filters">
+                        <span class="material-symbols-outlined">restart_alt</span>
+                        Reset
+                    </button>
                 </div>
-                <span class="badge ${doc.status}">${doc.status}</span>
-            </div>
-            <div style="flex: 1;">
-                <h3 style="margin: 0; font-size: 1.125rem;">${doc.title}</h3>
-                <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
-                ${doc.category === 'IAAF' ? `
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
-                ` : ''}
-                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Last updated: ${new Date(doc.created_at || Date.now()).toLocaleDateString()}</p>
-            </div>
-            <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
-                <button class="btn-danger" style="width: 100%;" onclick="deleteDocument('${doc.id}')">Delete Document</button>
+
+                <div id="no-results" class="hidden">
+                    <span class="material-symbols-outlined">search_off</span>
+                    <p>No documents found matching your search.</p>
+                </div>
+
+                <!-- Admin View -->
+                <section id="admin-view" class="role-view hidden">
+                    <h1>Admin Dashboard</h1>
+                    <div class="stats-bar">All Documents Monitoring</div>
+
+                <table id="admin-doc-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <!-- Client View -->
+            <section id="client-view" class="role-view hidden">
+                <h1>My Documents</h1>
+                <button id="upload-trigger" class="fab" title="Add New Document">
+                    <span class="material-symbols-outlined">add</span>
+                </button>
+                <div id="client-doc-list" class="grid-list">
+                    <!-- Document cards will go here -->
+                </div>
+            </section>
+            </main>
+            <footer>
+                <p>&copy; 2024 DocTrack | Document Monitoring System. All rights reserved.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Document -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Add Document</h2>
+            <form id="add-doc-form">
+                <!-- 1st: Category -->
+                <div class="field-group">
+                    <label for="doc-category-select">Document Category</label>
+                    <select id="doc-category-select" required>
+                        <option value="IR">IR</option>
+                        <option value="IAAF">IAAF</option>
+                    </select>
+                </div>
+
+                <!-- 2nd: Control Number (IAAF only) -->
+                <div class="field-group iaaf-only hidden">
+                    <label for="doc-control-no">Control Number</label>
+                    <input type="text" id="doc-control-no" placeholder="ECOM-YYYY-0000" pattern="ECOM-[0-9]{4}-[0-9]{4}">
+                </div>
+
+                <!-- 3rd: Subject / Reason (Title) -->
+                <div class="field-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="doc-title-input">Subject / Reason</label>
+                        <span id="char-counter" class="char-counter">0 / 50</span>
+                    </div>
+                    <input type="text" id="doc-title-input" placeholder="Enter subject or reason..." required minlength="3" maxlength="50">
+                </div>
+
+                <!-- 4th, 5th, 6th: IAAF Specific Fields -->
+                <div class="iaaf-only hidden">
+                    <div class="field-group">
+                        <label for="doc-adj-type">Adjustment Type</label>
+                        <select id="doc-adj-type">
+                            <option value="">Select Type</option>
+                            <option value="Write Back">Write Back</option>
+                            <option value="Write off">Write off</option>
+                            <option value="Writeback/Writeoff">Writeback/Writeoff</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="doc-reason-code">Reason Code</label>
+                        <select id="doc-reason-code">
+                            <option value="">Select Code</option>
+                            <option value="13">13</option><option value="3">3</option>
+                            <option value="93">93</option><option value="83">83</option>
+                            <option value="90">90</option><option value="10">10</option>
+                            <option value="9">9</option><option value="70">70</option>
+                            <option value="91">91</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="doc-reason-desc">Reason Description</label>
+                        <input type="text" id="doc-reason-desc" readonly style="background-color: var(--gray-100); cursor: not-allowed;">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="close-modal" class="auth-btn cancel-btn">Cancel</button>
+                    <button type="submit" class="auth-btn">Create Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Deletion Confirmation -->
+    <div id="confirm-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Confirm Deletion</h2>
+            <p style="text-align: center; color: var(--gray-600); margin-bottom: 2rem;">Are you sure you want to delete this document? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancel-delete-btn" class="auth-btn cancel-btn">Cancel</button>
+                <button type="button" id="confirm-delete-btn" class="auth-btn btn-danger">Delete</button>
             </div>
         </div>
-    `).join('') : '';
-}
+    </div>
 
-// Global function for admin actions
-window.updateStatus = async (id, status) => {
-    const { error } = await supabaseClient
-        .from('documents')
-        .update({ status })
-        .eq('id', id);
-    
-    if (!error) {
-        showToast(`Document ${status}`);
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        showApp(user);
-    }
-};
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span id="toast-message"></span>
+    </div>
+
+    <script src="app.js" type="module"></script>
+</body>
+</html>
