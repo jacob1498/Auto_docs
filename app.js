@@ -123,6 +123,7 @@ const docTitleInput = document.getElementById('doc-title-input');
 const charCounter = document.getElementById('char-counter');
 const categorySelect = document.getElementById('doc-category-select');
 const reasonDescInput = document.getElementById('doc-reason-desc');
+const reasonCodeSelect = document.getElementById('doc-reason-code');
 const controlNoInput = document.getElementById('doc-control-no');
 const adjTypeSelect = document.getElementById('doc-adj-type');
 
