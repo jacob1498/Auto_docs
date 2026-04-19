@@ -8,6 +8,11 @@
     --gray-200: #e5e7eb;
     --gray-600: #4b5563;
     --gray-900: #111827;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --pending: #6366f1;
     --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -251,6 +256,68 @@ input:focus, select:focus {
     color: white;
     border-radius: 0.5rem;
     cursor: pointer;
+}
+
+/* Modern Table Styles */
+.table-container {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-top: 1rem;
+    border: 1px solid var(--gray-200);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9375rem;
+}
+
+thead {
+    background-color: var(--gray-50);
+    border-bottom: 2px solid var(--gray-200);
+}
+
+th {
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+    color: var(--gray-900);
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover {
+    background-color: #f8faff;
+}
+
+/* Styled Status Selects for Admin */
+.status-select {
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--gray-200);
+    font-size: 0.85rem;
+    background-color: var(--white);
+    cursor: pointer;
+    width: 100%;
+    max-width: 180px;
+    transition: border-color 0.2s;
 }
 
 .main-wrapper {
@@ -558,6 +625,29 @@ textarea#doc-title-input:focus {
     font-weight: 500;
     cursor: pointer;
     transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--gray-600);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background: var(--gray-100);
+    color: var(--primary);
+}
+
+.icon-btn.delete:hover {
+    background: #fee2e2;
+    color: var(--danger);
 }
 
 /* Toast Styles */
@@ -586,13 +676,47 @@ textarea#doc-title-input:focus {
 .badge {
     padding: 0.25rem 0.75rem;
     border-radius: 1rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
+    display: inline-block;
+    white-space: nowrap;
 }
 
-.badge.pending { background: #fef3c7; color: #92400e; }
-.badge.approved { background: #dcfce7; color: #166534; }
+/* Status Badge Colors */
+.badge.Pending { background: #e0e7ff; color: #4338ca; }
+.badge.Completed { background: #dcfce7; color: #15803d; }
+.badge.Cancelled { background: #fee2e2; color: #b91c1c; }
+.badge.Revised { background: #fef3c7; color: #b45309; }
+
+.badge[class*="Adjustment"] {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.iaaf-badge {
+    background: #fdf2f8 !important;
+    color: #be185d !important;
+}
+
+.ir-badge {
+    background: #f0f9ff !important;
+    color: #0369a1 !important;
+}
+
+.stats-bar {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--gray-200);
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
 
 .mobile-header {
     display: none;
