@@ -599,9 +599,9 @@ async function renderAdminDashboard() {
         .select(`*, profiles!owner_id(email)`);
 
     if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing').or('final_status.neq.Completed,final_status.is.null');
     } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised').neq('final_status', 'Completed');
+        query = query.eq('status', 'Revised').or('final_status.neq.Completed,final_status.is.null');
     } else if (currentAdminTab === 'completed') {
         query = query.eq('final_status', 'Completed');
     }
@@ -695,9 +695,9 @@ async function renderClientDashboard(userId) {
     if (currentClientTab === 'completed') {
         query = query.eq('final_status', 'Completed');
     } else if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing').or('final_status.neq.Completed,final_status.is.null');
     } else { // active
-        query = query.neq('status', 'Adjusted - for Routing').neq('final_status', 'Completed').neq('status', 'Cancelled');
+        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').or('final_status.neq.Completed,final_status.is.null');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -761,8 +761,13 @@ async function renderClientDashboard(userId) {
 }
 
 // Global function for admin actions
-window.updateStatus = async (id, status) => {
+window.updateStatus = async (id, status, customMsg = null) => {
     try {
+        // If manually changed via dropdown to 'Adjusted', switch the tab view
+        if (status === 'Adjusted - for Routing' && currentUserRole === 'client') {
+            currentClientTab = 'submitted';
+        }
+
         const { error: updateError } = await supabaseClient
             .from('documents')
             .update({ status, updated_at: new Date().toISOString() })
@@ -770,8 +775,7 @@ window.updateStatus = async (id, status) => {
         
         if (updateError) throw updateError;
 
-        // Show the toast immediately for feedback
-        showToast(`Status updated: ${status}`);
+        showToast(customMsg || `Status updated: ${status}`);
         
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) showApp(session.user);
@@ -782,12 +786,7 @@ window.updateStatus = async (id, status) => {
 
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
-    
-    // 1. Force state to 'submitted' first
-    currentClientTab = 'submitted';
-    
-    // 2. Update status and trigger re-render
-    await updateStatus(id, 'Adjusted - for Routing');
+    await updateStatus(id, 'Adjusted - for Routing', 'Successfully submitted to Admin!');
 };
 
 window.receiveDocument = async (id) => {
