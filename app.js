@@ -14,6 +14,21 @@ const logoutBtn = document.getElementById('logout-btn');
 const userDisplay = document.getElementById('user-display');
 let currentUserRole = null;
 let editingId = null;
+let currentClientTab = 'active';
+let currentAdminTab = 'all';
+
+// Tab Switching Logic
+window.switchClientTab = async (tab) => {
+    currentClientTab = tab;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) renderClientDashboard(session.user.id);
+};
+
+window.switchAdminTab = async (tab) => {
+    currentAdminTab = tab;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) renderAdminDashboard();
+};
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -577,12 +592,25 @@ async function renderAdminDashboard() {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
     
+    // Update active tab UI
+    document.querySelectorAll('#admin-view .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `admin-tab-${currentAdminTab}`);
+    });
+
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
     let query = supabaseClient
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
+
+    if (currentAdminTab === 'submitted') {
+        query = query.eq('status', 'Adjusted - for Routing');
+    } else if (currentAdminTab === 'returned') {
+        query = query.eq('status', 'Revised');
+    } else if (currentAdminTab === 'completed') {
+        query = query.eq('final_status', 'Completed');
+    }
 
     if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
@@ -602,7 +630,7 @@ async function renderAdminDashboard() {
             errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
         }
         
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 2rem;">
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #e11d48; padding: 2rem;">
             <strong>Error:</strong> ${errorMsg}
         </td></tr>`;
         return;
@@ -648,12 +676,18 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>
-    `}).join('') : '<tr><td colspan="9" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
+    `}).join('') : '<tr><td colspan="10" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
 }
 
 async function renderClientDashboard(userId) {
     document.getElementById('client-view').classList.remove('hidden');
     document.getElementById('admin-view').classList.add('hidden');
+
+    // Update active tab UI
+    document.querySelectorAll('#client-view .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `client-tab-${currentClientTab}`);
+    });
+
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
@@ -661,6 +695,14 @@ async function renderClientDashboard(userId) {
         .from('documents')
         .select('*')
         .eq('owner_id', userId);
+
+    if (currentClientTab === 'submitted') {
+        query = query.eq('status', 'Adjusted - for Routing');
+    } else if (currentClientTab === 'completed') {
+        query = query.eq('final_status', 'Completed');
+    } else { // active
+        query = query.not('status', 'eq', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+    }
 
     if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
@@ -675,12 +717,12 @@ async function renderClientDashboard(userId) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
+        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
     if (!docs || docs.length === 0) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
