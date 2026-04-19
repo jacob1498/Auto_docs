@@ -647,7 +647,7 @@ async function renderAdminDashboard() {
             errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
         }
         
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #e11d48; padding: 2rem;">
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 2rem;">
             <strong>Error:</strong> ${errorMsg}
         </td></tr>`;
         return;
@@ -676,8 +676,8 @@ async function renderAdminDashboard() {
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
-            <td style="font-size: 0.75rem;">${updatedDate}</td>
-            <td><span class="badge ${agingClass}">${aging} Days</span></td>
+            <td class="col-meta" style="font-size: 0.75rem;">${updatedDate}</td>
+            <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
@@ -692,7 +692,7 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>
-    `}).join('') : '<tr><td colspan="10" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
+    `}).join('') : '<tr><td colspan="8" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
 }
 
 async function renderClientDashboard(userId) {
@@ -728,12 +728,12 @@ async function renderClientDashboard(userId) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
     if (!docs || docs.length === 0) {
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
@@ -750,11 +750,11 @@ async function renderClientDashboard(userId) {
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
             <td style="font-weight: 500;">${doc.owner_name || '—'}</td>
-            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
+            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
-            <td style="font-size: 0.75rem;">${updatedDate}</td>
-            <td><span class="badge ${agingClass}">${aging} Days</span></td>
+            <td class="col-meta" style="font-size: 0.75rem;">${updatedDate}</td>
+            <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
