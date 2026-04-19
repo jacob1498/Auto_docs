@@ -521,10 +521,12 @@ async function renderAdminDashboard() {
     }
 
     const { data: docs, error } = await query.order('created_at', { ascending: sortBy === 'asc' });
+    
+    console.log("Admin View Data:", docs); // Debug: Check if data is arriving
 
     if (error) {
         console.error("Admin Fetch Error:", error.message);
-        showToast("Error loading admin data");
+        showToast("Fetch Error: " + error.message);
         return;
     }
 
