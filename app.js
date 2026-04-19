@@ -265,6 +265,7 @@ addDocForm?.addEventListener('submit', async (e) => {
     const title = document.getElementById('doc-title-input').value.trim();
     const category = document.getElementById('doc-category-select').value;
     const ownerName = document.getElementById('doc-owner-name').value;
+    const initialStatus = document.getElementById('doc-status-select').value;
     
     // IAAF specific values
     let controlNo = document.getElementById('doc-control-no').value;
@@ -314,7 +315,7 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         if (!editingId) {
             insertData.owner_id = user.id;
-            insertData.status = 'For Adjustment - for Routing';
+            insertData.status = initialStatus;
             insertData.final_status = 'Pending';
         }
 
@@ -554,8 +555,7 @@ function initRealtimeSubscription(user) {
                 } else {
                     renderClientDashboard(user.id);
                 }
-            }
-        )
+            })
         .subscribe();
 }
 
@@ -626,7 +626,7 @@ async function renderAdminDashboard() {
         .select(`*, profiles!owner_id(email)`);
 
     if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+        query = query.eq('final_status', 'Submitted');
     } else if (currentAdminTab === 'returned') {
         query = query.eq('status', 'Revised').not('final_status', 'eq', 'Completed');
     } else if (currentAdminTab === 'completed') {
@@ -722,9 +722,9 @@ async function renderClientDashboard(userId) {
     if (currentClientTab === 'completed') {
         query = query.eq('final_status', 'Completed');
     } else if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+        query = query.eq('final_status', 'Submitted');
     } else { // active
-        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').not('final_status', 'eq', 'Completed');
+        query = query.eq('final_status', 'Pending');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -761,7 +761,8 @@ async function renderClientDashboard(userId) {
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td>
-                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
+                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select" 
+                    ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled' : ''}>
                     <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
                     <option value="For Adjustment - for Routing" ${doc.status === 'For Adjustment - for Routing' ? 'selected' : ''}>For Adjustment - for Routing</option>
                     <option value="Revised" ${doc.status === 'Revised' ? 'selected' : ''}>Revised</option>
@@ -774,11 +775,11 @@ async function renderClientDashboard(userId) {
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
-                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
                     <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin"
-                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">send</span>
                     </button>
                 </div>
@@ -790,18 +791,6 @@ async function renderClientDashboard(userId) {
 // Global function for admin actions
 window.updateStatus = async (id, status, customMsg = null) => {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        const role = currentUserRole || user?.user_metadata?.role;
-
-        // Detect if this is a submission to Admin
-        const isSubmitting = status === 'Adjusted - for Routing';
-        
-        if (isSubmitting && role === 'client') {
-            // Force movement to the Submitted tab visually
-            if (!customMsg) customMsg = 'Successfully submitted to Admin!';
-            currentClientTab = 'submitted';
-        }
-
         const { error: updateError } = await supabaseClient
             .from('documents')
             .update({ status, updated_at: new Date().toISOString() })
@@ -820,18 +809,35 @@ window.updateStatus = async (id, status, customMsg = null) => {
 
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
-    await updateStatus(id, 'Adjusted - for Routing', 'Successfully submitted to Admin!');
+    await updateFinalStatus(id, 'Submitted');
 };
 
 window.receiveDocument = async (id) => {
-    currentAdminTab = 'completed';
+    // Admin action: Mark as received/completed
+    currentAdminTab = 'completed'; 
     await updateFinalStatus(id, 'Completed');
 };
 
 window.returnToClient = async (id) => {
     if (!confirm("Return this document to the client for revision?")) return;
-    currentAdminTab = 'returned';
-    await updateStatus(id, 'Revised');
+    try {
+        const { error } = await supabaseClient
+            .from('documents')
+            .update({ 
+                status: 'Revised', 
+                final_status: 'Pending',
+                updated_at: new Date().toISOString() 
+            })
+            .eq('id', id);
+        
+        if (error) throw error;
+        showToast("Returned to client for revision");
+        currentAdminTab = 'returned';
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) showApp(session.user);
+    } catch (err) {
+        alert("Return failed: " + err.message);
+    }
 };
 
 window.updateFinalStatus = async (id, final_status) => {
@@ -846,12 +852,15 @@ window.updateFinalStatus = async (id, final_status) => {
         
         if (error) throw error;
 
-        showToast(`Final Status: ${final_status}`);
+        showToast(final_status === 'Submitted' ? 'Successfully submitted to Admin!' : `Final Status: ${final_status}`);
         
         // Sync tab view based on action
         if (final_status === 'Completed') {
             if (currentUserRole === 'admin') currentAdminTab = 'completed';
             else currentClientTab = 'completed';
+        } else if (final_status === 'Submitted') {
+            if (currentUserRole === 'client') currentClientTab = 'submitted';
+            else currentAdminTab = 'submitted';
         }
 
         const { data: { session } } = await supabaseClient.auth.getSession();
