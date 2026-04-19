@@ -771,17 +771,20 @@ async function renderClientDashboard(userId) {
         .select('*', { count: 'exact' })
         .eq('owner_id', userId);
 
-    if (currentClientTab === 'completed') {
-        query = query.eq('status', 'Completed');
-    } else if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Submitted');
-    } else if (currentClientTab === 'returned') {
-        query = query.eq('status', 'Revised');
-    } else { // active
-        // Using multiple neq calls is more robust than 'not.in' for PostgREST parsing
-        query = query.neq('status', 'Submitted')
-                     .neq('status', 'Completed')
-                     .neq('status', 'Revised');
+    // Simplified filtering to avoid the "not.in" parsing error
+    switch (currentClientTab) {
+        case 'completed':
+            query = query.eq('status', 'Completed');
+            break;
+        case 'submitted':
+            query = query.eq('status', 'Submitted');
+            break;
+        case 'returned':
+            query = query.eq('status', 'Revised');
+            break;
+        default: // 'active'
+            query = query.in('status', ['Active', 'Cancelled']);
+            break;
     }
 
     const from = currentClientPage * PAGE_SIZE;
@@ -891,8 +894,9 @@ window.updateStatus = async (id, status, customMsg = null) => {
         showToast(customMsg || `Status updated: ${status}`);
         
         // Targeted refresh instead of full app reset
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        if (sessionData?.session?.user) {
+            const user = sessionData.session.user;
             // Use metadata as fallback if local role variable is not set
             const role = currentUserRole || user.user_metadata?.role;
             if (role === 'admin') {
