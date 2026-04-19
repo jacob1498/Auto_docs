@@ -362,6 +362,15 @@ addDocForm?.addEventListener('submit', async (e) => {
             error = insertError;
         }
 
+        // Automatically switch tab based on initial status to show the new document
+        if (!editingId) {
+            if (initialStatus === 'Submitted') {
+                currentClientTab = 'submitted';
+            } else {
+                currentClientTab = 'active';
+            }
+        }
+
         if (error) throw error;
 
         modalOverlay.classList.add('hidden');
