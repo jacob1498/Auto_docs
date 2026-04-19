@@ -599,9 +599,9 @@ async function renderAdminDashboard() {
         .select(`*, profiles!owner_id(email)`);
 
     if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
     } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised').neq('final_status', 'Completed');
+        query = query.eq('status', 'Revised').not('final_status', 'eq', 'Completed');
     } else if (currentAdminTab === 'completed') {
         query = query.eq('final_status', 'Completed');
     }
@@ -695,9 +695,9 @@ async function renderClientDashboard(userId) {
     if (currentClientTab === 'completed') {
         query = query.eq('final_status', 'Completed');
     } else if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').neq('final_status', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
     } else { // active
-        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').neq('final_status', 'Completed');
+        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').not('final_status', 'eq', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -763,10 +763,13 @@ async function renderClientDashboard(userId) {
 // Global function for admin actions
 window.updateStatus = async (id, status, customMsg = null) => {
     try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const role = currentUserRole || user?.user_metadata?.role;
+
         // Detect if this is a submission to Admin
         const isSubmitting = status === 'Adjusted - for Routing';
         
-        if (isSubmitting && currentUserRole === 'client') {
+        if (isSubmitting && role === 'client') {
             // Force movement to the Submitted tab visually
             if (!customMsg) customMsg = 'Successfully submitted to Admin!';
             currentClientTab = 'submitted';
