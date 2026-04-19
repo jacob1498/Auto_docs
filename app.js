@@ -585,9 +585,25 @@ async function renderAdminDashboard() {
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
+    // Sync Admin Tab UI
+    const tabAll = document.getElementById('admin-tab-all');
+    const tabSubmitted = document.getElementById('admin-tab-submitted');
+    const tabReturned = document.getElementById('admin-tab-returned');
+    const tabCompleted = document.getElementById('admin-tab-completed');
+    if (tabAll && tabSubmitted && tabReturned && tabCompleted) {
+        tabAll.classList.toggle('active', activeAdminTab === 'all');
+        tabSubmitted.classList.toggle('active', activeAdminTab === 'submitted');
+        tabReturned.classList.toggle('active', activeAdminTab === 'returned');
+        tabCompleted.classList.toggle('active', activeAdminTab === 'completed');
+    }
+
     let query = supabaseClient
         .from('documents')
         .select(`*, profiles!owner_id(email)`);
+
+    if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+    }
 
     const { data: docs, error } = await query.order('created_at', { 
         ascending: sortBy === 'asc' 
@@ -609,37 +625,32 @@ async function renderAdminDashboard() {
         return;
     }
 
-    // Sync Admin Tab UI
-    const tabs = ['all', 'submitted', 'returned', 'completed'];
-    tabs.forEach(tab => {
-        const el = document.getElementById(`admin-tab-${tab}`);
-        if (el) el.classList.toggle('active', activeAdminTab === tab);
-    });
-
     // Filter by Tab
-    let filteredByTab = (docs || []).filter(doc => {
+    const filteredByTab = (docs || []).filter(doc => {
         const isSubmitted = doc.final_status === 'Submitted';
-        const isReturned = (doc.status === 'Revised' || doc.status === 'For Adjustment - for Routing') && doc.return_reason;
+        const isReturned = doc.status === 'Revised' && doc.return_reason;
         const isCompleted = doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
 
         if (activeAdminTab === 'submitted') {
+            // Show only documents waiting for review
+            return doc.final_status === 'Submitted';
             return isSubmitted;
         }
         if (activeAdminTab === 'returned') {
+            // Show only documents that have been returned to the client
+            return doc.status === 'Revised' && doc.return_reason;
             return isReturned;
         }
         if (activeAdminTab === 'completed') {
+            // Show only completed or cancelled documents
+            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
             return isCompleted;
         }
+        return true; // "All" tab shows everything
         
         // "All Monitoring" now shows items that haven't moved to other workflow buckets
         return !isSubmitted && !isReturned && !isCompleted;
     });
-
-    // Apply secondary status filter if not 'all'
-    if (filterStatus !== 'all') {
-        filteredByTab = filteredByTab.filter(doc => doc.status === filterStatus);
-    }
 
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
@@ -692,6 +703,10 @@ async function renderAdminDashboard() {
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
+                    <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="Submitted" ${doc.final_status === 'Submitted' ? 'selected' : ''}>Submitted</option>
+                    <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                    <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                     ${finalStatusOptions}
                 </select>
             </td>
@@ -839,13 +854,6 @@ window.updateStatus = async (id, status) => {
 };
 
 window.submitToAdmin = async (id) => {
-    // Reset search and filters to ensure the document is visible in the Submitted tab
-    const filterSelect = document.getElementById('filter-status');
-    const searchInput = document.getElementById('dashboard-search');
-    if (filterSelect) filterSelect.value = 'all';
-    if (searchInput) searchInput.value = '';
-    document.getElementById('clear-search')?.classList.add('hidden');
-
     const { error } = await supabaseClient
         .from('documents')
         .update({ 
