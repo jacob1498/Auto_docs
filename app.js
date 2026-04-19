@@ -16,6 +16,7 @@ let currentUserRole = null;
 let editingId = null;
 let currentClientTab = 'active';
 let currentAdminTab = 'all';
+let realtimeSubscription = null;
 
 // Tab Switching Logic
 window.switchClientTab = async (tab) => {
@@ -469,6 +470,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
         showApp(session.user);
     } else {
+        if (realtimeSubscription) {
+            supabaseClient.removeChannel(realtimeSubscription);
+            realtimeSubscription = null;
+        }
         showAuth();
     }
 });
@@ -535,6 +540,25 @@ signupForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Realtime Subscription Logic
+function initRealtimeSubscription(user) {
+    if (realtimeSubscription) return;
+
+    realtimeSubscription = supabaseClient
+        .channel('schema-db-changes')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'documents' }, 
+            () => {
+                if (currentUserRole === 'admin') {
+                    renderAdminDashboard();
+                } else {
+                    renderClientDashboard(user.id);
+                }
+            }
+        )
+        .subscribe();
+}
+
 // 3. Handle Logout
 logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
 
@@ -566,6 +590,9 @@ async function showApp(user) {
     } else {
         await renderClientDashboard(user.id);
     }
+
+    // Initialize realtime syncing
+    initRealtimeSubscription(user);
 }
 
 function showAuth() {
