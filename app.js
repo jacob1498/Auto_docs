@@ -225,6 +225,10 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     if (charCounter) charCounter.innerText = '0 / 200';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
     // Reset disclosure
+    document.querySelectorAll('.reveal-step').forEach(el => {
+        el.classList.remove('visible');
+        el.classList.add('hidden'); // Ensure they are hidden again
+    });
     document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible'));
 });
 
@@ -314,6 +318,7 @@ addDocForm?.addEventListener('submit', async (e) => {
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
         if (charCounter) charCounter.innerText = '0 / 200';
+        document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showToast("Document added successfully!");
         showApp(user);
@@ -332,6 +337,11 @@ const confirmModal = document.getElementById('confirm-modal-overlay');
 window.deleteDocument = (id) => {
     documentIdToDelete = id;
     confirmModal.classList.remove('hidden');
+};
+
+window.editDocument = (id) => {
+    // Implementation for opening modal with existing data
+    console.log("Edit requested for ID:", id);
 };
 
 document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
@@ -575,7 +585,8 @@ async function renderAdminDashboard() {
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td>
                 <div class="action-btns">
-                    <button class="btn-danger" onclick="deleteDocument('${doc.id}')">Delete</button>
+                    <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit"><span class="material-symbols-outlined">edit</span></button>
+                    <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
         </tr>
@@ -606,52 +617,35 @@ async function renderClientDashboard(userId) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        if (errorMsg.includes("infinite recursion")) {
-            errorMsg = "Security Policy Error: Infinite recursion detected.";
-        }
-        container.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #e11d48; border: 1px dashed #e11d48; border-radius: 8px;">
-                <strong>Error loading your documents:</strong><br>${errorMsg}
-            </div>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
     if (!docs || docs.length === 0) {
-        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray-500);">
-            No documents found. Try checking your database policies.
-        </p>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
     container.innerHTML = docs.map(doc => `
-        <div class="doc-card">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div class="doc-icon">
-                    <span class="material-symbols-outlined">${doc.category === 'IAAF' ? 'account_balance' : (doc.category === 'IR' ? 'analytics' : 'description')}</span>
+        <tr>
+            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}" style="background: var(--primary-light); color: var(--primary);">${doc.category}</span></td>
+            <td style="font-weight: 600;">${doc.title}</td>
+            <td>${doc.owner_name || 'N/A'}</td>
+            <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
+            <td><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
+            <td><span class="badge ${calculateAging(doc.created_at) > 5 ? 'Cancelled' : ''}">${calculateAging(doc.created_at)} Days</span></td>
+            <td>
+                <div class="action-btns">
+                    <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
+                    </button>
+                    <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">delete</span>
+                    </button>
                 </div>
-                <span class="badge ${doc.status}">${doc.status}</span>
-            </div>
-            <div style="flex: 1;">
-                <h3 style="margin: 0; font-size: 1.125rem;">${doc.title}</h3>
-                <p style="font-size: 0.85rem; color: var(--gray-800); font-weight: 600; margin: 4px 0;">Owner: ${doc.owner_name || 'N/A'}</p>
-                <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
-                ${doc.category === 'IAAF' ? `
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Charge To: ${doc.charge_to || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Amount: ${doc.amount_range || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
-                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
-                ` : ''}
-                <div style="background: var(--gray-50); padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 0.75rem;">
-                    <p style="margin: 2px 0;"><strong>Period:</strong> ${doc.period || 'N/A'} | <strong>Week:</strong> ${doc.week || 'N/A'}</p>
-                    <p style="margin: 2px 0;"><strong>Final Status:</strong> ${doc.final_status || 'Pending'}</p>
-                </div>
-                <p style="font-size: 0.8rem; color: var(--gray-600); margin: 8px 0 0 0;">Aging: ${calculateAging(doc.created_at)} Days</p>
-            </div>
-            <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
-                <button class="btn-danger" style="width: 100%;" onclick="deleteDocument('${doc.id}')">Delete Document</button>
-            </div>
-        </div>
+            </td>
+        </tr>
     `).join('');
 }
 
