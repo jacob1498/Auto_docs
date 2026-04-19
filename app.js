@@ -16,6 +16,7 @@ let currentUserRole = null;
 let editingId = null;
 let currentClientTab = 'active';
 let currentAdminTab = 'all';
+let currentAdminAgingFilter = null;
 let currentAdminPage = 0;
 let currentClientPage = 0;
 let currentSearchTerm = '';
@@ -35,6 +36,7 @@ window.switchClientTab = async (tab) => {
 window.switchAdminTab = async (tab) => {
     currentAdminTab = tab;
     currentAdminPage = 0; // Reset to first page
+    currentAdminAgingFilter = null; // Clear aging filter when manually switching tabs
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderAdminDashboard();
@@ -622,7 +624,7 @@ async function updateStatsDashboard() {
         const colors = { '0-3 Days': 'var(--success)', '4-7 Days': 'var(--warning)', '8+ Days': 'var(--danger)' };
         
         agingContainer.innerHTML = Object.entries(brackets).map(([label, count]) => `
-            <div class="aging-bracket-card" style="border-left-color: ${colors[label]}">
+            <div class="aging-bracket-card" style="border-left-color: ${colors[label]}" onclick="filterByAging('${label}')">
                 <span style="font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase;">${label}</span>
                 <div style="display: flex; align-items: baseline; gap: 0.5rem;">
                     <h3 style="margin:0; font-size: 1.5rem;">${count}</h3>
@@ -762,6 +764,26 @@ async function renderAdminDashboard() {
         query = query.eq('status', 'Completed');
     }
 
+    // Apply Aging Bracket filter if active
+    if (currentAdminAgingFilter) {
+        const now = new Date();
+        if (currentAdminAgingFilter === '0-3 Days') {
+            const limit = new Date();
+            limit.setDate(limit.getDate() - 3);
+            query = query.gte('created_at', limit.toISOString());
+        } else if (currentAdminAgingFilter === '4-7 Days') {
+            const start = new Date();
+            start.setDate(start.getDate() - 3);
+            const end = new Date();
+            end.setDate(end.getDate() - 7);
+            query = query.lt('created_at', start.toISOString()).gte('created_at', end.toISOString());
+        } else if (currentAdminAgingFilter === '8+ Days') {
+            const limit = new Date();
+            limit.setDate(limit.getDate() - 7);
+            query = query.lt('created_at', limit.toISOString());
+        }
+    }
+
     // Server-side filtering logic
     if (currentSearchTerm) {
         query = query.or(`title.ilike.%${currentSearchTerm}%,owner_name.ilike.%${currentSearchTerm}%,control_number.ilike.%${currentSearchTerm}%`);
@@ -797,7 +819,8 @@ async function renderAdminDashboard() {
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
-        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> Total Records: ${count || 0}`;
+        const filterLabel = currentAdminAgingFilter ? ` | Aging: ${currentAdminAgingFilter}` : '';
+        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel} | Total: ${count || 0}`;
     }
 
     tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
@@ -1036,4 +1059,11 @@ window.returnToClient = async (id) => {
     currentAdminTab = 'returned'; // Switch UI tab before update triggers re-render
     currentAdminPage = 0; // Reset to first page
     await updateStatus(id, 'Revised', 'Returned to client for revision');
+};
+
+window.filterByAging = async (label) => {
+    currentAdminAgingFilter = label;
+    currentAdminTab = 'submitted'; // Force tab to submitted as aging is for pending docs
+    currentAdminPage = 0;
+    await switchSidebarView('documents');
 };
