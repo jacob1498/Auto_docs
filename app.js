@@ -112,7 +112,7 @@ async function switchSidebarView(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
-document.getElementById('nav-profile')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('profile'); });
+document.getElementById('user-profile-header')?.addEventListener('click', () => switchSidebarView('profile'));
 document.getElementById('profile-form')?.addEventListener('submit', (e) => { e.preventDefault(); updateProfile(); });
 
 document.getElementById('export-reports-btn')?.addEventListener('click', () => {
@@ -838,6 +838,8 @@ async function renderProfileView() {
     const fullName = profile?.full_name || '';
     document.getElementById('profile-full-name').value = fullName;
     document.getElementById('profile-name-display').innerText = fullName || 'User';
+    document.getElementById('header-user-name').innerText = fullName || 'User';
+    document.getElementById('header-user-role').innerText = role;
 }
 
 async function updateProfile() {
@@ -862,6 +864,7 @@ async function updateProfile() {
         if (error) throw error;
 
         document.getElementById('profile-name-display').innerText = fullName || 'User';
+        document.getElementById('header-user-name').innerText = fullName || 'User';
         showToast("Profile updated successfully!");
     } catch (err) {
         alert("Update failed: " + err.message);
