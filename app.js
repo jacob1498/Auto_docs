@@ -623,7 +623,7 @@ async function renderAdminDashboard() {
         
         return `
         <tr>
-            <td style="box-shadow: inset 4px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
+            <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
@@ -691,7 +691,7 @@ async function renderClientDashboard(userId) {
 
         return `
         <tr>
-            <td style="box-shadow: inset 4px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
+            <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
