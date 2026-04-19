@@ -122,17 +122,17 @@ const addDocForm = document.getElementById('add-doc-form');
 const docTitleInput = document.getElementById('doc-title-input');
 const charCounter = document.getElementById('char-counter');
 const categorySelect = document.getElementById('doc-category-select');
-const iaafSection = document.getElementById('iaaf-specific-fields');
-const reasonCodeSelect = document.getElementById('doc-reason-code');
 const reasonDescInput = document.getElementById('doc-reason-desc');
 const controlNoInput = document.getElementById('doc-control-no');
+const adjTypeSelect = document.getElementById('doc-adj-type');
 
 categorySelect?.addEventListener('change', (e) => {
     const isIAAF = e.target.value === 'IAAF';
-    iaafSection.classList.toggle('hidden', !isIAAF);
+    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
     // Toggle required attributes for IAAF fields
     controlNoInput.required = isIAAF;
     reasonCodeSelect.required = isIAAF;
+    if (adjTypeSelect) adjTypeSelect.required = isIAAF;
 });
 
 reasonCodeSelect?.addEventListener('change', (e) => {
@@ -148,7 +148,7 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     modalOverlay.classList.add('hidden');
     addDocForm.reset();
     if (charCounter) charCounter.innerText = '0 / 50';
-    iaafSection.classList.add('hidden');
+    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
 });
 
 docTitleInput?.addEventListener('input', (e) => {
@@ -201,7 +201,7 @@ addDocForm?.addEventListener('submit', async (e) => {
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
         if (charCounter) charCounter.innerText = '0 / 50';
-        iaafSection.classList.add('hidden');
+        document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showToast("Document added successfully!");
         showApp(user);
     } catch (err) {
@@ -408,7 +408,10 @@ async function renderAdminDashboard() {
     const tbody = document.querySelector('#admin-doc-table tbody');
     tbody.innerHTML = docs ? docs.map(doc => `
         <tr>
-            <td>${doc.title}</td>
+            <td>
+                <div style="font-weight: 600;">${doc.title}</div>
+                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}</div>` : ''}
+            </td>
             <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
@@ -451,6 +454,11 @@ async function renderClientDashboard(userId) {
             <div style="flex: 1;">
                 <h3 style="margin: 0; font-size: 1.125rem;">${doc.title}</h3>
                 <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
+                ${doc.category === 'IAAF' ? `
+                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
+                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
+                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
+                ` : ''}
                 <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Last updated: ${new Date(doc.created_at || Date.now()).toLocaleDateString()}</p>
             </div>
             <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
