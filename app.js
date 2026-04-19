@@ -524,6 +524,8 @@ async function renderAdminDashboard() {
         ascending: sortBy === 'asc' 
     });
 
+    console.log("Admin Dashboard Data:", docs); // Debugging line
+
     if (error) {
         console.error("Admin Fetch Error:", error.message);
         const tbody = document.querySelector('#admin-doc-table tbody');
@@ -594,6 +596,8 @@ async function renderClientDashboard(userId) {
         ascending: sortBy === 'asc' 
     });
 
+    console.log("Client Dashboard Data:", docs); // Debugging line
+
     const container = document.getElementById('client-doc-list');
 
     if (error) {
@@ -604,7 +608,7 @@ async function renderClientDashboard(userId) {
 
     if (!docs || docs.length === 0) {
         container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray-500);">
-            You haven't created any documents yet.
+            No documents found. Try checking your database policies.
         </p>`;
         return;
     }
@@ -651,6 +655,8 @@ window.updateStatus = async (id, status) => {
     if (!error) {
         showToast(`Document ${status}`);
         const { data: { user } } = await supabaseClient.auth.getUser();
+        // Clear cached role on status update to ensure UI remains synced
+        currentUserRole = null; 
         showApp(user);
     }
 };
