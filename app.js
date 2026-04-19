@@ -778,7 +778,7 @@ async function renderClientDashboard(userId) {
     } else if (currentClientTab === 'returned') {
         query = query.eq('status', 'Revised');
     } else { // active
-        query = query.not('status', 'in', '("Submitted","Completed","Revised")');
+        query = query.not('status', 'in', ['Submitted', 'Completed', 'Revised']);
     }
 
     const from = currentClientPage * PAGE_SIZE;
