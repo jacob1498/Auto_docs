@@ -1110,3 +1110,44 @@ footer {
         gap: 0.75rem;
     }
 }
+
+/* Theme Overrides */
+body[data-theme="teal"] {
+    --primary: #14b8a6;
+    --primary-dark: #0f766e;
+    --pending: #14b8a6;
+}
+body[data-theme="purple"] {
+    --primary: #a855f7;
+    --primary-dark: #7e22ce;
+    --pending: #a855f7;
+}
+body[data-theme="cream"] {
+    --primary: #c2410c;
+    --primary-dark: #9a3412;
+    --bg-main: #fffbeb;
+    --white: #fffdfa;
+    --gray-50: #fff9db;
+    --gray-100: #fef3c7;
+    --pending: #c2410c;
+}
+body[data-theme="dark"] {
+    --bg-main: #0f172a;
+    --white: #1e293b;
+    --gray-50: #334155;
+    --gray-100: #475569;
+    --gray-200: #1e293b;
+    --gray-600: #94a3b8;
+    --gray-900: #f1f5f9;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+}
+body[data-theme="blue"] {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --pending: #2563eb;
+}
+body[data-theme="red"] {
+    --primary: #dc2626;
+    --primary-dark: #991b1b;
+    --pending: #dc2626;
+}

@@ -1,6 +1,13 @@
 const SUPABASE_URL = 'https://ghfloompdoasrtpnjomo.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZmxvb21wZG9hc3J0cG5qb21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzM2NzUsImV4cCI6MjA5MjEwOTY3NX0.i4G0bPcUPfYCBvTjCQBxPEJvh2HNbR1JCgxgYmXm6yc';
 
+// Theme Initialization Logic
+const applyTheme = (theme) => {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('doctrack-theme', theme);
+};
+applyTheme(localStorage.getItem('doctrack-theme') || 'default');
+
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // DOM Elements
@@ -60,6 +67,8 @@ async function switchSidebarView(viewName) {
     if (viewName === 'dashboard') clearSearchUI();
     
     const profileView = document.getElementById('profile-view');
+    const settingsView = document.getElementById('settings-view');
+
     // Update Active Nav State
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.toggle('active', item.id === `nav-${viewName}`);
@@ -70,28 +79,24 @@ async function switchSidebarView(viewName) {
     const reportsView = document.getElementById('reports-view');
     const docViews = document.querySelectorAll('.documents-content');
     
+    // Hide all views first
+    [statsView, reportsView, profileView, settingsView].forEach(v => v?.classList.add('hidden'));
+    docViews.forEach(v => v.classList.add('hidden'));
+
     if (viewName === 'dashboard') {
         statsView.classList.remove('hidden');
-        reportsView.classList.add('hidden');
-        profileView.classList.add('hidden');
-        docViews.forEach(v => v.classList.add('hidden'));
         await updateStatsDashboard();
     } else if (viewName === 'profile') {
-        statsView.classList.add('hidden');
-        reportsView.classList.add('hidden');
         profileView.classList.remove('hidden');
-        docViews.forEach(v => v.classList.add('hidden'));
         await renderProfileView();
+    } else if (viewName === 'settings') {
+        settingsView.classList.remove('hidden');
+        const selector = document.getElementById('theme-selector');
+        if (selector) selector.value = localStorage.getItem('doctrack-theme') || 'default';
     } else if (viewName === 'reports') {
-        statsView.classList.add('hidden');
-        profileView.classList.add('hidden');
         reportsView.classList.remove('hidden');
-        docViews.forEach(v => v.classList.add('hidden'));
         await renderReportsView();
     } else if (viewName === 'documents') {
-        statsView.classList.add('hidden');
-        reportsView.classList.add('hidden');
-        profileView.classList.add('hidden');
         // The actual role-based rendering happens in showApp or re-renders
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -111,6 +116,12 @@ async function switchSidebarView(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
+document.getElementById('nav-settings')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('settings'); });
+
+// Theme Selector Listener
+document.getElementById('theme-selector')?.addEventListener('change', (e) => {
+    applyTheme(e.target.value);
+});
 
 // Profile Dropdown Toggle
 document.getElementById('user-profile-header')?.addEventListener('click', (e) => {
