@@ -129,6 +129,7 @@ addDocForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const title = document.getElementById('doc-title-input').value.trim();
+    const category = document.getElementById('doc-category-select').value;
 
     if (title.length < 3) {
         alert("Title must be at least 3 characters long.");
@@ -143,7 +144,7 @@ addDocForm?.addEventListener('submit', async (e) => {
     try {
         const { error } = await supabaseClient
             .from('documents')
-            .insert([{ title, owner_id: user.id, status: 'pending' }]);
+            .insert([{ title, category, owner_id: user.id, status: 'pending' }]);
 
         if (error) throw error;
 
@@ -357,6 +358,7 @@ async function renderAdminDashboard() {
     tbody.innerHTML = docs ? docs.map(doc => `
         <tr>
             <td>${doc.title}</td>
+            <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td>
@@ -397,6 +399,7 @@ async function renderClientDashboard(userId) {
             </div>
             <div style="flex: 1;">
                 <h3 style="margin: 0; font-size: 1.125rem;">${doc.title}</h3>
+                <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
                 <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Last updated: ${new Date(doc.created_at || Date.now()).toLocaleDateString()}</p>
             </div>
             <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
