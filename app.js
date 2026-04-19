@@ -95,7 +95,7 @@ document.getElementById('clear-search')?.addEventListener('click', () => {
 // Sort Functionality
 document.getElementById('sort-date')?.addEventListener('change', async () => {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) await showApp(session.user);
+    if (session) showApp(session.user);
 });
 
 // Reset All Filters
@@ -112,7 +112,7 @@ document.getElementById('reset-filters')?.addEventListener('click', async () => 
 
     // Refresh data with default settings
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) await showApp(session.user);
+    if (session) showApp(session.user);
 });
 
 // Reason Code Mapping
@@ -350,7 +350,7 @@ addDocForm?.addEventListener('submit', async (e) => {
         document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
-        await showApp(user);
+        showApp(user);
     } catch (err) {
         alert(err.message);
     } finally {
@@ -433,7 +433,7 @@ document.getElementById('confirm-delete-btn')?.addEventListener('click', async (
         confirmModal.classList.add('hidden');
         showToast("Document deleted successfully");
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) await showApp(user);
+        showApp(user);
     } catch (err) {
         alert("Error deleting document: " + err.message);
     } finally {
@@ -464,9 +464,9 @@ document.addEventListener('click', (e) => {
 });
 
 // 1. Auth Listener
-supabaseClient.auth.onAuthStateChange(async (event, session) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
-        await showApp(session.user);
+        showApp(session.user);
     } else {
         showAuth();
     }
@@ -754,15 +754,13 @@ async function renderClientDashboard(userId) {
 // Global function for admin actions
 window.updateStatus = async (id, status, customMsg = null) => {
     try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) throw new Error("No active session found.");
-
-        const role = currentUserRole || session.user.user_metadata?.role;
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const role = currentUserRole || user?.user_metadata?.role;
 
         // Detect if this is a submission to Admin
         const isSubmitting = status === 'Adjusted - for Routing';
         
-        if (isSubmitting && (role === 'client' || currentUserRole === 'client')) {
+        if (isSubmitting && role === 'client') {
             // Force movement to the Submitted tab visually
             if (!customMsg) customMsg = 'Successfully submitted to Admin!';
             currentClientTab = 'submitted';
@@ -777,8 +775,8 @@ window.updateStatus = async (id, status, customMsg = null) => {
 
         showToast(customMsg || `Status updated: ${status}`);
         
-        // Re-render the application to reflect changes
-        await showApp(session.user);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) showApp(session.user);
     } catch (err) {
         alert("Update failed: " + err.message);
     }
