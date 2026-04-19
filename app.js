@@ -621,6 +621,14 @@ async function renderAdminDashboard() {
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
+        // Only show receive button if document is submitted (Adjusted - for Routing) and not already completed
+        const showReceiveBtn = doc.status === 'Adjusted - for Routing' && doc.final_status !== 'Completed';
+        const receiveBtnHtml = showReceiveBtn ? `
+            <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Received">
+                <span class="material-symbols-outlined" style="color: var(--success)">check_circle</span>
+            </button>
+        ` : '';
+        
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
@@ -643,6 +651,7 @@ async function renderAdminDashboard() {
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
+                    ${receiveBtnHtml}
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
@@ -689,6 +698,14 @@ async function renderClientDashboard(userId) {
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
+        // Show Submit button only if it needs routing and hasn't been submitted yet
+        const canSubmit = doc.status !== 'Adjusted - for Routing' && doc.status !== 'Cancelled';
+        const submitBtnHtml = canSubmit ? `
+            <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin">
+                <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--primary)">send</span>
+            </button>
+        ` : '';
+
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
@@ -714,6 +731,7 @@ async function renderClientDashboard(userId) {
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
+                    ${submitBtnHtml}
                 </div>
             </td>
         </tr>
@@ -734,6 +752,14 @@ window.updateStatus = async (id, status) => {
         currentUserRole = null; 
         showApp(user);
     }
+};
+
+window.submitToAdmin = async (id) => {
+    await updateStatus(id, 'Adjusted - for Routing');
+};
+
+window.receiveDocument = async (id) => {
+    await updateFinalStatus(id, 'Completed');
 };
 
 window.updateFinalStatus = async (id, final_status) => {
