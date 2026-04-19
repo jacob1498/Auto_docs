@@ -754,20 +754,24 @@ async function renderClientDashboard(userId) {
 // Global function for admin actions
 window.updateStatus = async (id, status, customMsg = null) => {
     try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) throw new Error("No active session found.");
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        if (sessionError || !session) throw new Error("No active session found.");
 
-        const role = currentUserRole || session.user.user_metadata?.role;
-
-        // Detect if this is a submission to Admin
+        // 1. Force state synchronization based on the status change
         const isSubmitting = status === 'Adjusted - for Routing';
-        
-        if (isSubmitting && (role === 'client' || currentUserRole === 'client')) {
-            // Force movement to the Submitted tab visually
+        const isCompleting = status === 'Completed';
+        const isReturning = status === 'Revised';
+
+        if (isSubmitting && currentUserRole === 'client') {
             if (!customMsg) customMsg = 'Successfully submitted to Admin!';
             currentClientTab = 'submitted';
+        } else if (isCompleting && currentUserRole === 'admin') {
+            currentAdminTab = 'completed';
+        } else if (isReturning && currentUserRole === 'admin') {
+            currentAdminTab = 'returned';
         }
 
+        // 2. Perform the database update
         const { error: updateError } = await supabaseClient
             .from('documents')
             .update({ status, updated_at: new Date().toISOString() })
@@ -775,9 +779,17 @@ window.updateStatus = async (id, status, customMsg = null) => {
         
         if (updateError) throw updateError;
 
+        // 3. Show feedback
         showToast(customMsg || `Status updated: ${status}`);
         
-        // Re-render the application to reflect changes
+        // 4. Force immediate UI refresh
+        // We clear the cache to ensure we get fresh data from the DB
+        const tbody = currentUserRole === 'admin' ? 
+            document.querySelector('#admin-doc-table tbody') : 
+            document.getElementById('client-doc-list');
+        
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem;"><div class="spinner" style="border-top-color: var(--primary); margin: auto;"></div></td></tr>';
+
         await showApp(session.user);
     } catch (err) {
         alert("Update failed: " + err.message);
