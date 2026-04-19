@@ -551,18 +551,24 @@ async function renderAdminDashboard() {
         return;
     }
 
+    // Update Stats Bar with count
+    const statsBar = document.querySelector('.stats-bar');
+    if (statsBar) {
+        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> Total Records: ${docs.length}`;
+    }
+
     const tbody = document.querySelector('#admin-doc-table tbody');
     tbody.innerHTML = (docs && docs.length > 0) ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
-        const createdDate = new Date(doc.created_at).toLocaleString();
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
+        const detailLine = doc.category === 'IAAF' ? `${doc.control_number || ''} | ${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
         return `
         <tr>
             <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''} | ${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}</div>` : ''}
+                <span class="doc-meta-detail">${detailLine}</span>
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
@@ -631,12 +637,13 @@ async function renderClientDashboard(userId) {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
+        const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
         return `
         <tr>
             <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}</div>` : ''}
+                <span class="doc-meta-detail">${detailLine}</span>
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
