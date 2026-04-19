@@ -527,13 +527,15 @@ async function renderAdminDashboard() {
     if (error) {
         console.error("Admin Fetch Error:", error.message);
         const tbody = document.querySelector('#admin-doc-table tbody');
-        let errorMessage = error.message;
-        // Helpful tip for ambiguity errors
-        if (errorMessage.includes("more than one relationship")) {
-            errorMessage = "Database ambiguity error. Please refresh the schema cache in Supabase.";
+        let errorMsg = error.message;
+        if (errorMsg.includes("infinite recursion")) {
+            errorMsg = "Security Policy Error: Infinite recursion detected. Please update RLS policies.";
+        } else if (errorMsg.includes("more than one relationship")) {
+            errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
         }
+        
         tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 2rem;">
-            <strong>Error:</strong> ${errorMessage}
+            <strong>Error:</strong> ${errorMsg}
         </td></tr>`;
         return;
     }
@@ -603,7 +605,14 @@ async function renderClientDashboard(userId) {
 
     if (error) {
         console.error("Client Fetch Error:", error.message);
-        container.innerHTML = `<p style="color: #e11d48; text-align: center; grid-column: 1/-1;">Error loading your documents: ${error.message}</p>`;
+        let errorMsg = error.message;
+        if (errorMsg.includes("infinite recursion")) {
+            errorMsg = "Security Policy Error: Infinite recursion detected.";
+        }
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #e11d48; border: 1px dashed #e11d48; border-radius: 8px;">
+                <strong>Error loading your documents:</strong><br>${errorMsg}
+            </div>`;
         return;
     }
 
