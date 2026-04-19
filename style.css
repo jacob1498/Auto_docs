@@ -263,9 +263,10 @@ input:focus, select:focus {
     background: white;
     border-radius: 1rem;
     box-shadow: var(--shadow);
-    overflow: hidden;
+    overflow: auto; /* Changed to auto to allow horizontal scroll on small screens */
     margin-top: 1rem;
     border: 1px solid var(--gray-200);
+    max-height: 70vh; /* Limits height for sticky header effect */
 }
 
 table {
@@ -276,12 +277,13 @@ table {
 }
 
 thead {
-    background-color: var(--gray-50);
+    background-color: #f8fafc;
     border-bottom: 2px solid var(--gray-200);
+    z-index: 10;
 }
 
 th {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1rem; /* Tighter padding for Excel density */
     font-weight: 600;
     color: var(--gray-600);
     text-transform: uppercase;
@@ -293,18 +295,23 @@ th {
 }
 
 td {
-    padding: 1rem 1.5rem;
+    padding: 0.6rem 1rem; /* Tighter padding */
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
     color: var(--gray-900);
+    border-right: 1px solid #f1f5f9; /* Subtle vertical grid lines */
 }
 
 tr:last-child td {
     border-bottom: none;
 }
 
+tr:nth-child(even) {
+    background-color: #fcfcfd; /* Zebra striping */
+}
+
 tr:hover {
-    background-color: #f8faff;
+    background-color: #f1f5f9 !important; /* Stronger hover highlight */
 }
 
 /* Styled Status Selects for Admin */
