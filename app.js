@@ -627,19 +627,22 @@ async function renderAdminDashboard() {
 
     // Filter by Tab
     const filteredByTab = (docs || []).filter(doc => {
+        const isSubmitted = doc.final_status === 'Submitted';
+        const isReturned = doc.status === 'Revised' && doc.return_reason;
+        const isCompleted = doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
+
         if (activeAdminTab === 'submitted') {
-            // Show only documents waiting for review
-            return doc.final_status === 'Submitted';
+            return isSubmitted;
         }
         if (activeAdminTab === 'returned') {
-            // Show only documents that have been returned to the client
-            return doc.status === 'Revised' && doc.return_reason;
+            return isReturned;
         }
         if (activeAdminTab === 'completed') {
-            // Show only completed or cancelled documents
-            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
+            return isCompleted;
         }
-        return true; // "All" tab shows everything
+        
+        // "All Monitoring" now shows items that haven't moved to other workflow buckets
+        return !isSubmitted && !isReturned && !isCompleted;
     });
 
     // Update Stats Bar with count
@@ -656,6 +659,15 @@ async function renderAdminDashboard() {
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         const returnReasonHtml = doc.return_reason ? `<div style="color: var(--warning); font-size: 0.75rem; font-weight: 500; margin-top: 4px;">Reason: ${doc.return_reason}</div>` : '';
         
+        // Final status options: Admin cannot manually set a document to "Submitted"
+        // We only show "Submitted" in the dropdown if it is currently in that state
+        const finalStatusOptions = `
+            <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
+            ${doc.final_status === 'Submitted' ? '<option value="Submitted" selected>Submitted</option>' : ''}
+            <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
+            <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+        `;
+
         // Show Receive and Return buttons if document has been submitted
         const showReceiveBtn = doc.final_status === 'Submitted';
         const receiveBtnHtml = showReceiveBtn ? `
@@ -684,10 +696,7 @@ async function renderAdminDashboard() {
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
-                    <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Submitted" ${doc.final_status === 'Submitted' ? 'selected' : ''}>Submitted</option>
-                    <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                    <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                    ${finalStatusOptions}
                 </select>
             </td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
@@ -846,6 +855,7 @@ window.submitToAdmin = async (id) => {
     
     if (!error) {
         showToast("Document Submitted to Admin");
+        activeClientTab = 'submitted'; // Move to the Submitted tab automatically
         refreshDashboard();
     } else {
         alert("Failed to submit document: " + error.message);
