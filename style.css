@@ -536,6 +536,17 @@ tr:hover {
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
+.aging-bracket-card {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    border-left: 4px solid var(--gray-200);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
 .doc-icon {
     width: 48px;
     height: 48px;

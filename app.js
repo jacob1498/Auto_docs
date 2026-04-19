@@ -582,7 +582,7 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 async function updateStatsDashboard() {
-    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name');
+    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at');
     if (error) return;
 
     // Calculate high-level stats
@@ -601,8 +601,36 @@ async function updateStatsDashboard() {
 
     // Admin-only breakdown matrix
     const adminSection = document.getElementById('admin-breakdown-section');
-    if (currentUserRole === 'admin' && adminSection) {
+    const adminAgingSection = document.getElementById('admin-aging-section');
+
+    if (currentUserRole === 'admin') {
         adminSection.classList.remove('hidden');
+        adminAgingSection.classList.remove('hidden');
+
+        // Calculate Aging Brackets for Submitted docs
+        const pendingDocs = docs.filter(d => d.status === 'Submitted');
+        const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8+ Days': 0 };
+        
+        pendingDocs.forEach(d => {
+            const age = calculateAging(d.created_at);
+            if (age <= 3) brackets['0-3 Days']++;
+            else if (age <= 7) brackets['4-7 Days']++;
+            else brackets['8+ Days']++;
+        });
+
+        const agingContainer = document.getElementById('aging-brackets-container');
+        const colors = { '0-3 Days': 'var(--success)', '4-7 Days': 'var(--warning)', '8+ Days': 'var(--danger)' };
+        
+        agingContainer.innerHTML = Object.entries(brackets).map(([label, count]) => `
+            <div class="aging-bracket-card" style="border-left-color: ${colors[label]}">
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase;">${label}</span>
+                <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+                    <h3 style="margin:0; font-size: 1.5rem;">${count}</h3>
+                    <span style="font-size: 0.875rem; color: var(--gray-400);">docs</span>
+                </div>
+            </div>
+        `).join('');
+
         const matrixBody = document.querySelector('#owner-status-matrix tbody');
         
         // Group documents by owner
@@ -636,6 +664,7 @@ async function updateStatsDashboard() {
         `).join('');
     } else if (adminSection) {
         adminSection.classList.add('hidden');
+        adminAgingSection.classList.add('hidden');
     }
 }
 
