@@ -127,6 +127,7 @@ const reasonCodeSelect = document.getElementById('doc-reason-code');
 const controlNoInput = document.getElementById('doc-control-no');
 const adjTypeSelect = document.getElementById('doc-adj-type');
 const amountRangeSelect = document.getElementById('doc-amount-range');
+const chargeToSelect = document.getElementById('doc-charge-to');
 
 categorySelect?.addEventListener('change', (e) => {
     const isIAAF = e.target.value === 'IAAF';
@@ -136,6 +137,7 @@ categorySelect?.addEventListener('change', (e) => {
     reasonCodeSelect.required = isIAAF;
     if (adjTypeSelect) adjTypeSelect.required = isIAAF;
     if (amountRangeSelect) amountRangeSelect.required = isIAAF;
+    if (chargeToSelect) chargeToSelect.required = isIAAF;
 });
 
 reasonCodeSelect?.addEventListener('change', (e) => {
@@ -177,6 +179,12 @@ addDocForm?.addEventListener('submit', async (e) => {
     const adjType = document.getElementById('doc-adj-type').value;
     const reasonCode = document.getElementById('doc-reason-code').value;
     const amountRange = document.getElementById('doc-amount-range').value;
+    const chargeTo = document.getElementById('doc-charge-to').value;
+    
+    // Tracking fields
+    const period = document.getElementById('doc-period').value;
+    const week = document.getElementById('doc-week').value;
+    const docDate = document.getElementById('doc-date').value;
 
     if (title.length < 3) {
         alert("Title must be at least 3 characters long.");
@@ -205,7 +213,10 @@ addDocForm?.addEventListener('submit', async (e) => {
             owner_name: ownerName,
             owner_id: user.id, 
             status: 'For Adjustment - for Routing',
-            final_status: 'Submitted to Admin'
+            final_status: 'Pending',
+            period,
+            week: week ? parseInt(week) : null,
+            doc_date: docDate || null
         };
 
         if (category === 'IAAF') {
@@ -214,6 +225,7 @@ addDocForm?.addEventListener('submit', async (e) => {
             insertData.reason_code = reasonCode;
             insertData.reason_description = REASON_DESC_MAP[reasonCode];
             insertData.amount_range = amountRange;
+            insertData.charge_to = chargeTo;
         }
 
         const { error } = await supabaseClient
@@ -413,6 +425,13 @@ function showAuth() {
     signupView.classList.add('hidden');
 }
 
+function calculateAging(createdAt) {
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now - created);
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
 async function renderAdminDashboard() {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
@@ -430,15 +449,22 @@ async function renderAdminDashboard() {
     const { data: docs } = await query.order('created_at', { ascending: sortBy === 'asc' });
 
     const tbody = document.querySelector('#admin-doc-table tbody');
-    tbody.innerHTML = docs ? docs.map(doc => `
+    tbody.innerHTML = docs ? docs.map(doc => {
+        const aging = calculateAging(doc.created_at);
+        const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
+        const createdDate = new Date(doc.created_at).toLocaleString();
+        
+        return `
         <tr>
             <td>
                 <div style="font-weight: 600;">${doc.title}</div>
-                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}</div>` : ''}
+                ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}${doc.charge_to ? ` | ${doc.charge_to}` : ''}</div>` : ''}
+                <div style="font-size: 0.7rem; color: var(--primary);">Created: ${createdDate}</div>
             </td>
             <td>${doc.owner_name || 'N/A'}</td>
             <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
+            <td><span class="badge ${aging > 5 ? 'Cancelled' : ''}">${aging} Days</span></td>
             <td>
                 <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
@@ -449,18 +475,19 @@ async function renderAdminDashboard() {
             </td>
             <td>
                 <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
-                    <option value="Submitted to Admin" ${doc.final_status === 'Submitted to Admin' ? 'selected' : ''}>Submitted to Admin</option>
-                    <option value="Within Operation Area" ${doc.final_status === 'Within Operation Area' ? 'selected' : ''}>Within Operation Area</option>
+                    <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
                     <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
             </td>
+            <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td>
                 <div class="action-btns">
                     <button class="btn-danger" onclick="deleteDocument('${doc.id}')">Delete</button>
                 </div>
             </td>
         </tr>
-    `).join('') : '';
+    `}).join('') : '';
 }
 
 async function renderClientDashboard(userId) {
@@ -495,12 +522,16 @@ async function renderClientDashboard(userId) {
                 <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
                 ${doc.category === 'IAAF' ? `
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
+                    <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Charge To: ${doc.charge_to || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Amount: ${doc.amount_range || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
                 ` : ''}
-                <p style="font-size: 0.8rem; color: var(--primary); margin: 4px 0;">Final Status: ${doc.final_status || 'Submitted to Admin'}</p>
-                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Last updated: ${new Date(doc.created_at || Date.now()).toLocaleDateString()}</p>
+                <div style="background: var(--gray-50); padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 0.75rem;">
+                    <p style="margin: 2px 0;"><strong>Period:</strong> ${doc.period || 'N/A'} | <strong>Week:</strong> ${doc.week || 'N/A'}</p>
+                    <p style="margin: 2px 0;"><strong>Final Status:</strong> ${doc.final_status || 'Pending'}</p>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--gray-600); margin: 8px 0 0 0;">Aging: ${calculateAging(doc.created_at)} Days</p>
             </div>
             <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
                 <button class="btn-danger" style="width: 100%;" onclick="deleteDocument('${doc.id}')">Delete Document</button>
@@ -513,7 +544,7 @@ async function renderClientDashboard(userId) {
 window.updateStatus = async (id, status) => {
     const { error } = await supabaseClient
         .from('documents')
-        .update({ status })
+        .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
     
     if (!error) {
@@ -526,7 +557,7 @@ window.updateStatus = async (id, status) => {
 window.updateFinalStatus = async (id, final_status) => {
     const { error } = await supabaseClient
         .from('documents')
-        .update({ final_status })
+        .update({ final_status, updated_at: new Date().toISOString() })
         .eq('id', id);
     
     if (!error) {
