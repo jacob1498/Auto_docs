@@ -128,6 +128,8 @@ const controlNoInput = document.getElementById('doc-control-no');
 const adjTypeSelect = document.getElementById('doc-adj-type');
 const amountRangeSelect = document.getElementById('doc-amount-range');
 const chargeToSelect = document.getElementById('doc-charge-to');
+const ownerSelect = document.getElementById('doc-owner-name');
+const dateInput = document.getElementById('doc-date');
 
 categorySelect?.addEventListener('change', (e) => {
     const isIAAF = e.target.value === 'IAAF';
@@ -138,11 +140,42 @@ categorySelect?.addEventListener('change', (e) => {
     if (adjTypeSelect) adjTypeSelect.required = isIAAF;
     if (amountRangeSelect) amountRangeSelect.required = isIAAF;
     if (chargeToSelect) chargeToSelect.required = isIAAF;
+    
+    checkDisclosure();
 });
 
 reasonCodeSelect?.addEventListener('change', (e) => {
     reasonDescInput.value = REASON_DESC_MAP[e.target.value] || '';
 });
+
+// Progressive Disclosure Logic
+function checkDisclosure() {
+    const category = categorySelect.value;
+    const owner = ownerSelect.value;
+    const date = dateInput.value;
+    const control = controlNoInput.value;
+
+    // Reveal Date if Category and Owner are selected
+    if (category && owner) {
+        document.getElementById('step-date').classList.add('visible');
+        if (category === 'IAAF') document.getElementById('step-control').classList.add('visible');
+    }
+
+    // Reveal Subject if Date is picked (and control if IAAF)
+    if (date && (category !== 'IAAF' || control.length === 4)) {
+        document.getElementById('step-subject').classList.add('visible');
+    }
+
+    // Reveal IAAF details if category is IAAF and subject has content
+    if (category === 'IAAF' && docTitleInput.value.length > 5) {
+        document.getElementById('step-iaaf').classList.add('visible');
+    }
+}
+
+ownerSelect?.addEventListener('change', checkDisclosure);
+dateInput?.addEventListener('change', checkDisclosure);
+docTitleInput?.addEventListener('input', checkDisclosure);
+controlNoInput?.addEventListener('input', checkDisclosure);
 
 // Helper to calculate Period and ISO Week
 const updateTrackingFields = (dateVal) => {
@@ -178,11 +211,11 @@ document.getElementById('upload-trigger')?.addEventListener('click', () => {
     
     // Set default date to today and trigger auto-calc
     const today = new Date().toISOString().split('T')[0];
-    const dateInput = document.getElementById('doc-date');
     if (dateInput) {
         dateInput.value = today;
         updateTrackingFields(today);
     }
+    checkDisclosure();
 });
 
 document.getElementById('close-modal')?.addEventListener('click', () => {
@@ -190,6 +223,8 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     addDocForm.reset();
     if (charCounter) charCounter.innerText = '0 / 200';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
+    // Reset disclosure
+    document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible'));
 });
 
 docTitleInput?.addEventListener('input', (e) => {
