@@ -433,6 +433,36 @@
         </div>
     </div>
 
+    <!-- Modal for Export Options -->
+    <div id="export-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Export Options</h2>
+            <div class="field-group">
+                <label>Choose data to extract:</label>
+                <select id="export-type-select">
+                    <option value="summary">Monthly Summary (Reports)</option>
+                    <option value="raw">Full Document Records (CSV)</option>
+                </select>
+            </div>
+            <div id="date-range-fields" class="hidden" style="margin-top: 1.5rem;">
+                <div class="modal-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="field-group">
+                        <label for="export-start-date">Start Date</label>
+                        <input type="date" id="export-start-date">
+                    </div>
+                    <div class="field-group">
+                        <label for="export-end-date">End Date</label>
+                        <input type="date" id="export-end-date">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 2rem;">
+                <button type="button" id="close-export-modal" class="auth-btn cancel-btn">Cancel</button>
+                <button type="button" id="confirm-export-btn" class="auth-btn">Download CSV</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal for Deletion Confirmation -->
     <div id="confirm-modal-overlay" class="modal-overlay hidden">
         <div class="modal-card card">

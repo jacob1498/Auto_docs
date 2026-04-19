@@ -101,7 +101,34 @@ async function switchSidebarView(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
-document.getElementById('export-reports-btn')?.addEventListener('click', () => window.exportReportsToCSV());
+
+document.getElementById('export-reports-btn')?.addEventListener('click', () => {
+    document.getElementById('export-modal-overlay').classList.remove('hidden');
+    // Reset modal state
+    document.getElementById('export-type-select').value = 'summary';
+    document.getElementById('date-range-fields').classList.add('hidden');
+    document.getElementById('export-start-date').value = '';
+    document.getElementById('export-end-date').value = '';
+});
+
+document.getElementById('close-export-modal')?.addEventListener('click', () => {
+    document.getElementById('export-modal-overlay').classList.add('hidden');
+});
+
+document.getElementById('confirm-export-btn')?.addEventListener('click', async () => {
+    const type = document.getElementById('export-type-select').value;
+    document.getElementById('export-modal-overlay').classList.add('hidden');
+    if (type === 'summary') {
+        window.exportReportsToCSV();
+    } else {
+        await window.exportRawDataToCSV();
+    }
+});
+
+document.getElementById('export-type-select')?.addEventListener('change', (e) => {
+    const isRaw = e.target.value === 'raw';
+    document.getElementById('date-range-fields')?.classList.toggle('hidden', !isRaw);
+});
 
 // View Toggling
 document.getElementById('go-to-signup').addEventListener('click', () => {
@@ -804,6 +831,59 @@ window.exportReportsToCSV = () => {
     document.body.removeChild(link);
 };
 
+window.exportRawDataToCSV = async () => {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const startDate = document.getElementById('export-start-date').value;
+    const endDate = document.getElementById('export-end-date').value;
+
+    let query = supabaseClient.from('documents').select('*');
+    
+    // If not admin, only export their own docs
+    const role = currentUserRole || user.user_metadata?.role;
+    if (role !== 'admin') {
+        query = query.eq('owner_id', user.id);
+    }
+
+    // Apply date range filters based on Document Date
+    if (startDate) query = query.gte('doc_date', startDate);
+    if (endDate) query = query.lte('doc_date', endDate);
+
+    const { data: docs, error } = await query.order('created_at', { ascending: false });
+
+    if (error || !docs || docs.length === 0) {
+        alert("No document data found to export.");
+        return;
+    }
+
+    const headers = ["Title", "Owner", "Category", "Control Number", "Status", "Period", "Week", "Date", "Created At"];
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+
+    docs.forEach(doc => {
+        const row = [
+            `"${(doc.title || '').replace(/"/g, '""')}"`,
+            `"${(doc.owner_name || '').replace(/"/g, '""')}"`,
+            `"${doc.category || ''}"`,
+            `"${doc.control_number || ''}"`,
+            `"${doc.status || ''}"`,
+            `"${doc.period || ''}"`,
+            `"${doc.week || ''}"`,
+            `"${doc.doc_date || ''}"`,
+            `"${doc.created_at || ''}"`
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `DocTrack_Raw_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 // Realtime Subscription Logic
 function initRealtimeSubscription(user) {
     if (realtimeSubscription) return;
@@ -876,7 +956,15 @@ async function renderAdminDashboard() {
     
     const tbody = document.querySelector('#admin-doc-table tbody');
     // Show loading state
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-top-color: var(--primary);"></div></td></tr>';
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8">
+                <div class="table-loader-content">
+                    <div class="spinner spinner-dark"></div>
+                    <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Fetching records...</span>
+                </div>
+            </td>
+        </tr>`;
 
     const adminPagination = document.getElementById('admin-pagination');
     adminPagination.innerHTML = '';
@@ -955,10 +1043,9 @@ async function renderAdminDashboard() {
     }
 
     const hasDocs = docs && docs.length > 0;
-    // Only show "No results found" if a search is active and returned no documents
-    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs || !currentSearchTerm);
-    document.querySelector('#admin-view .table-container')?.classList.toggle('hidden', !hasDocs);
-    document.getElementById('admin-pagination')?.classList.toggle('hidden', !hasDocs);
+    // Always keep table container visible to maintain structure
+    document.querySelector('#admin-view .table-container')?.classList.remove('hidden');
+    document.getElementById('no-results')?.classList.add('hidden');
 
     tbody.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
@@ -992,7 +1079,13 @@ async function renderAdminDashboard() {
                 </div>
             </td>
         </tr>
-    `}).join('') : '';
+    `}).join('') : `
+        <tr>
+            <td colspan="8" style="text-align:center; padding: 4rem; color: var(--gray-400);">
+                <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem;">search_off</span>
+                ${currentSearchTerm ? 'No documents found matching your search.' : 'No documents available in this category.'}
+            </td>
+        </tr>`;
 
     renderPagination(count, currentAdminPage, 'admin');
 }
@@ -1003,7 +1096,15 @@ async function renderClientDashboard(userId) {
 
     const container = document.getElementById('client-doc-list');
     // Show loading state
-    container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem;"><div class="spinner" style="margin: 0 auto; border-top-color: var(--primary);"></div></td></tr>';
+    container.innerHTML = `
+        <tr>
+            <td colspan="8">
+                <div class="table-loader-content">
+                    <div class="spinner spinner-dark"></div>
+                    <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Loading your documents...</span>
+                </div>
+            </td>
+        </tr>`;
 
 
     const clientPagination = document.getElementById('client-pagination');
@@ -1058,10 +1159,9 @@ async function renderClientDashboard(userId) {
     }
 
     const hasDocs = docs && docs.length > 0;
-    // Only show search empty state if a search term is present and no documents were found
-    document.getElementById('no-results')?.classList.toggle('hidden', hasDocs || !currentSearchTerm);
-    document.querySelector('#client-view .table-container')?.classList.toggle('hidden', !hasDocs);
-    document.getElementById('client-pagination')?.classList.toggle('hidden', !hasDocs);
+    // Always keep table container visible to maintain structure
+    document.querySelector('#client-view .table-container')?.classList.remove('hidden');
+    document.getElementById('no-results')?.classList.add('hidden');
 
     container.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
@@ -1094,18 +1194,34 @@ async function renderClientDashboard(userId) {
                 </div>
             </td>
         </tr>
-    `}).join('') : '';
+    `}).join('') : `
+        <tr>
+            <td colspan="8" style="text-align:center; padding: 4rem; color: var(--gray-400);">
+                <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem;">description</span>
+                ${currentSearchTerm ? 'No documents found matching your search.' : 'You have no documents in this tab.'}
+            </td>
+        </tr>`;
 
     renderPagination(count, currentClientPage, 'client');
 }
 
 function renderPagination(totalCount, currentPage, type) {
     const container = document.getElementById(`${type}-pagination`);
-    if (!container || !totalCount || totalCount <= PAGE_SIZE) return;
+    if (!container) return;
+
+    if (!totalCount || totalCount <= PAGE_SIZE) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
+    container.classList.remove('hidden');
 
     const totalPages = Math.ceil(totalCount / PAGE_SIZE);
     
     container.innerHTML = `
+        <button class="page-btn" ${currentPage === 0 ? 'disabled' : ''} id="${type}-first" title="First Page">
+            <span class="material-symbols-outlined">first_page</span>
+        </button>
         <button class="page-btn" ${currentPage === 0 ? 'disabled' : ''} id="${type}-prev">
             <span class="material-symbols-outlined">chevron_left</span>
         </button>
@@ -1113,29 +1229,26 @@ function renderPagination(totalCount, currentPage, type) {
         <button class="page-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''} id="${type}-next">
             <span class="material-symbols-outlined">chevron_right</span>
         </button>
+        <button class="page-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''} id="${type}-last" title="Last Page">
+            <span class="material-symbols-outlined">last_page</span>
+        </button>
     `;
 
-    document.getElementById(`${type}-prev`).onclick = async () => {
+    const updatePage = async (newPage) => {
         if (type === 'admin') {
-            currentAdminPage--;
+            currentAdminPage = newPage;
             await renderAdminDashboard();
         } else {
-            currentClientPage--;
+            currentClientPage = newPage;
             const { data: { session } } = await supabaseClient.auth.getSession();
-            await renderClientDashboard(session.user.id);
+            if (session) await renderClientDashboard(session.user.id);
         }
     };
 
-    document.getElementById(`${type}-next`).onclick = async () => {
-        if (type === 'admin') {
-            currentAdminPage++;
-            await renderAdminDashboard();
-        } else {
-            currentClientPage++;
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            await renderClientDashboard(session.user.id);
-        }
-    };
+    document.getElementById(`${type}-first`).onclick = () => updatePage(0);
+    document.getElementById(`${type}-prev`).onclick = () => updatePage(currentPage - 1);
+    document.getElementById(`${type}-next`).onclick = () => updatePage(currentPage + 1);
+    document.getElementById(`${type}-last`).onclick = () => updatePage(totalPages - 1);
 }
 
 // Global function for admin actions
