@@ -562,17 +562,18 @@ async function renderAdminDashboard() {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
-        const detailLine = doc.category === 'IAAF' ? `${doc.control_number || ''} | ${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
+        const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
         return `
         <tr>
-            <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
+            <td style="box-shadow: inset 4px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
-            <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
+            <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
+            <td style="font-size: 0.8rem; color: var(--gray-600);">${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td>
                 <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
@@ -641,7 +642,7 @@ async function renderClientDashboard(userId) {
 
         return `
         <tr>
-            <td style="border-left: 4px solid ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
+            <td style="box-shadow: inset 4px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
