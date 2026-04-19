@@ -139,8 +139,24 @@
                 <button id="upload-trigger" class="fab" title="Add New Document">
                     <span class="material-symbols-outlined">add</span>
                 </button>
-                <div id="client-doc-list" class="grid-list">
-                    <!-- Document cards will go here -->
+                <div class="table-container">
+                    <table id="client-doc-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Title / Subject</th>
+                                <th>Owner</th>
+                                <th>Control No.</th>
+                                <th>Status</th>
+                                <th>Final Status</th>
+                                <th>Aging</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="client-doc-list">
+                            <!-- Document rows will go here -->
+                        </tbody>
+                    </table>
                 </div>
             </section>
             </main>
