@@ -752,16 +752,15 @@ async function renderClientDashboard(userId) {
     }
 
     // Filter by Tab
-    let filteredByTab = (docs || []).filter(doc => {
-        const fStatus = doc.final_status || 'Pending';
+    const filteredByTab = (docs || []).filter(doc => {
         if (activeClientTab === 'submitted') {
-            return fStatus === 'Submitted';
+            return doc.final_status === 'Submitted';
         }
         if (activeClientTab === 'completed') {
-            return fStatus === 'Completed' || fStatus === 'Cancelled';
+            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
         }
-        // Active tab: Pending
-        return fStatus === 'Pending';
+        // Active tab: Pending or empty final_status
+        return doc.final_status === 'Pending' || !doc.final_status;
     });
 
     if (filteredByTab.length === 0) {
