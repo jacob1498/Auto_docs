@@ -623,15 +623,12 @@ async function renderAdminDashboard() {
 
     let query = supabaseClient
         .from('documents')
-        .select(`*`);
+        .select('*');
 
-    if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Submitted');
-    } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised');
-    } else if (currentAdminTab === 'completed') {
-        query = query.eq('status', 'Completed');
-    }
+    // Apply filters based on tab, except for 'all' which shows everything
+    if (currentAdminTab === 'submitted') query = query.eq('status', 'Submitted');
+    if (currentAdminTab === 'returned') query = query.eq('status', 'Revised');
+    if (currentAdminTab === 'completed') query = query.eq('status', 'Completed');
 
     const { data: docs, error } = await query.order('created_at', { 
         ascending: sortBy === 'asc' 
@@ -672,13 +669,13 @@ async function renderAdminDashboard() {
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
-            <td style="font-weight: 500;">${doc.owner_name || '—'}</td>
-            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
-            <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
-            <td><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td style="font-weight: 500; text-align: center;">${doc.owner_name || '—'}</td>
+            <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
+            <td style="font-family: monospace; font-size: 0.85rem; text-align: center;">${doc.control_number || '—'}</td>
+            <td style="text-align: center;"><span class="badge ${doc.status}">${doc.status}</span></td>
             <td class="col-meta" style="font-size: 0.75rem;">${updatedDate}</td>
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
-            <td>
+            <td class="col-meta">
                 <div class="action-btns">
                     <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
                         ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
@@ -749,13 +746,13 @@ async function renderClientDashboard(userId) {
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
             </td>
-            <td style="font-weight: 500;">${doc.owner_name || '—'}</td>
-            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
-            <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
-            <td><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td style="font-weight: 500; text-align: center;">${doc.owner_name || '—'}</td>
+            <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
+            <td style="font-family: monospace; font-size: 0.85rem; text-align: center;">${doc.control_number || '—'}</td>
+            <td style="text-align: center;"><span class="badge ${doc.status}">${doc.status}</span></td>
             <td class="col-meta" style="font-size: 0.75rem;">${updatedDate}</td>
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
-            <td>
+            <td class="col-meta">
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
                         ${doc.status === 'Submitted' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
