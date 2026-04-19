@@ -771,7 +771,8 @@ async function renderClientDashboard(userId) {
         .select('*', { count: 'exact' })
         .eq('owner_id', userId);
 
-    // Simplified filtering to avoid the "not.in" parsing error
+    // Use a whitelist approach (.in) instead of a blacklist (.not.in) 
+    // This is much more stable and prevents the "failed to parse filter" error
     switch (currentClientTab) {
         case 'completed':
             query = query.eq('status', 'Completed');
@@ -782,7 +783,9 @@ async function renderClientDashboard(userId) {
         case 'returned':
             query = query.eq('status', 'Revised');
             break;
-        default: // 'active'
+        case 'active':
+        default:
+            // Explicitly list only the statuses allowed in the Active tab
             query = query.in('status', ['Active', 'Cancelled']);
             break;
     }
