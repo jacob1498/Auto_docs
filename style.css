@@ -437,7 +437,8 @@ input:focus, select:focus {
 
 .modal-card {
     animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    max-width: 450px;
+    max-width: 600px;
+    width: 90%;
 }
 
 @keyframes modalIn {
@@ -463,6 +464,60 @@ input:focus, select:focus {
 .char-counter {
     font-size: 0.75rem;
     color: var(--gray-600);
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.iaaf-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px dashed var(--gray-100);
+}
+
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    margin: 0 0 1rem 0;
+    font-weight: 700;
+}
+
+.readonly-input {
+    background-color: var(--gray-100) !important;
+    cursor: not-allowed;
+    color: var(--gray-600);
+}
+
+textarea#doc-title-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    background-color: var(--gray-50);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+    transition: all 0.2s;
+}
+
+textarea#doc-title-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: var(--white);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .action-btns {
