@@ -315,8 +315,7 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         if (!editingId) {
             insertData.owner_id = user.id;
-            insertData.status = initialStatus;
-            insertData.final_status = 'Pending';
+            insertData.status = 'Pending';
         }
 
         if (category === 'IAAF') {
@@ -626,11 +625,11 @@ async function renderAdminDashboard() {
         .select(`*, profiles!owner_id(email)`);
 
     if (currentAdminTab === 'submitted') {
-        query = query.eq('final_status', 'Submitted');
+        query = query.eq('status', 'Submitted');
     } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised').not('final_status', 'eq', 'Completed');
+        query = query.eq('status', 'Revised');
     } else if (currentAdminTab === 'completed') {
-        query = query.eq('final_status', 'Completed');
+        query = query.eq('status', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -675,25 +674,17 @@ async function renderAdminDashboard() {
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
-            <td style="font-size: 0.8rem; color: var(--gray-600);">${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
-            <td>
-                <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
-                    <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                    <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select>
-            </td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
-                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
                         <span class="material-symbols-outlined">check_circle</span>
                     </button>
                     <button class="icon-btn" onclick="returnToClient('${doc.id}')" title="Return to Client"
-                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
                         <span class="material-symbols-outlined">assignment_return</span>
                     </button>
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
@@ -720,11 +711,11 @@ async function renderClientDashboard(userId) {
         .eq('owner_id', userId);
 
     if (currentClientTab === 'completed') {
-        query = query.eq('final_status', 'Completed');
+        query = query.eq('status', 'Completed');
     } else if (currentClientTab === 'submitted') {
-        query = query.eq('final_status', 'Submitted');
+        query = query.eq('status', 'Submitted');
     } else { // active
-        query = query.eq('final_status', 'Pending');
+        query = query.in('status', ['Pending', 'Revised']);
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -760,26 +751,17 @@ async function renderClientDashboard(userId) {
             <td style="font-weight: 500;">${doc.owner_name || 'N/A'}</td>
             <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
-            <td>
-                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select" 
-                    ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled' : ''}>
-                    <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
-                    <option value="For Adjustment - for Routing" ${doc.status === 'For Adjustment - for Routing' ? 'selected' : ''}>For Adjustment - for Routing</option>
-                    <option value="Revised" ${doc.status === 'Revised' ? 'selected' : ''}>Revised</option>
-                    <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select>
-            </td>
-            <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
+            <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
-                        ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.status === 'Submitted' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
                     <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin"
-                        ${doc.final_status === 'Submitted' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.status === 'Submitted' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">send</span>
                     </button>
                 </div>
@@ -809,13 +791,13 @@ window.updateStatus = async (id, status, customMsg = null) => {
 
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
-    await updateFinalStatus(id, 'Submitted');
+    await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
 };
 
 window.receiveDocument = async (id) => {
     // Admin action: Mark as received/completed
     currentAdminTab = 'completed'; 
-    await updateFinalStatus(id, 'Completed');
+    await updateStatus(id, 'Completed');
 };
 
 window.returnToClient = async (id) => {
@@ -825,7 +807,6 @@ window.returnToClient = async (id) => {
             .from('documents')
             .update({ 
                 status: 'Revised', 
-                final_status: 'Pending',
                 updated_at: new Date().toISOString() 
             })
             .eq('id', id);
@@ -837,36 +818,5 @@ window.returnToClient = async (id) => {
         if (session) showApp(session.user);
     } catch (err) {
         alert("Return failed: " + err.message);
-    }
-};
-
-window.updateFinalStatus = async (id, final_status) => {
-    try {
-        const { error } = await supabaseClient
-            .from('documents')
-            .update({ 
-                final_status, 
-                updated_at: new Date().toISOString() 
-            })
-            .eq('id', id);
-        
-        if (error) throw error;
-
-        showToast(final_status === 'Submitted' ? 'Successfully submitted to Admin!' : `Final Status: ${final_status}`);
-        
-        // Sync tab view based on action
-        if (final_status === 'Completed') {
-            if (currentUserRole === 'admin') currentAdminTab = 'completed';
-            else currentClientTab = 'completed';
-        } else if (final_status === 'Submitted') {
-            if (currentUserRole === 'client') currentClientTab = 'submitted';
-            else currentAdminTab = 'submitted';
-        }
-
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) showApp(session.user);
-    } catch (err) {
-        console.error("Status update failed:", err);
-        alert("Update failed: " + err.message);
     }
 };
