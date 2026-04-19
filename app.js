@@ -519,6 +519,7 @@ function calculateAging(createdAt) {
 async function renderAdminDashboard() {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
+    
     const sortBy = document.getElementById('sort-date').value;
     const filterStatus = document.getElementById('filter-status').value;
 
@@ -555,18 +556,18 @@ async function renderAdminDashboard() {
         const aging = calculateAging(doc.created_at);
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const createdDate = new Date(doc.created_at).toLocaleString();
+        const agingClass = aging > 5 ? 'Cancelled' : 'Pending';
         
         return `
         <tr>
             <td>
                 <div style="font-weight: 600;">${doc.title}</div>
                 ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}${doc.amount_range ? ` | ${doc.amount_range}` : ''}${doc.charge_to ? ` | ${doc.charge_to}` : ''}</div>` : ''}
-                <div style="font-size: 0.7rem; color: var(--primary);">Created: ${createdDate}</div>
             </td>
             <td>${doc.owner_name || 'N/A'}</td>
-            <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
+            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
-            <td><span class="badge ${aging > 5 ? 'Cancelled' : ''}">${aging} Days</span></td>
+            <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
                     <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
@@ -628,13 +629,13 @@ async function renderClientDashboard(userId) {
 
     container.innerHTML = docs.map(doc => `
         <tr>
-            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}" style="background: var(--primary-light); color: var(--primary);">${doc.category}</span></td>
+            <td><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category}</span></td>
             <td style="font-weight: 600;">${doc.title}</td>
             <td>${doc.owner_name || 'N/A'}</td>
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
             <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
-            <td><span class="badge ${calculateAging(doc.created_at) > 5 ? 'Cancelled' : ''}">${calculateAging(doc.created_at)} Days</span></td>
+            <td><span class="badge ${calculateAging(doc.created_at) > 5 ? 'Cancelled' : 'Pending'}">${calculateAging(doc.created_at)} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit">
