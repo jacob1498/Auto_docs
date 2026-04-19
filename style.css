@@ -278,15 +278,15 @@ table {
 }
 
 thead {
-    background-color: #f1f5f9;
-    border-bottom: 1px solid var(--gray-300);
+    background-color: #f8fafc;
+    border-bottom: 2px solid var(--gray-200);
     z-index: 10;
     position: sticky;
     top: 0;
 }
 
 th {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.25rem;
     font-weight: 600;
     color: var(--gray-900);
     text-transform: uppercase;
@@ -299,11 +299,11 @@ th {
 }
 
 td {
-    padding: 0.65rem 1rem;
+    padding: 0.75rem 1.25rem;
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
     color: var(--gray-900);
-    border-right: 1px solid #f1f5f9;
+    border-right: 1px solid var(--gray-200);
     line-height: 1.4;
 }
 
@@ -335,9 +335,9 @@ tr:hover {
 }
 
 .doc-meta-detail {
-    font-size: 0.725rem;
+    font-size: 0.75rem;
     color: var(--gray-600);
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     font-weight: 400;
     display: block;
 }
