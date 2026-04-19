@@ -40,6 +40,7 @@ document.getElementById('dashboard-search')?.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
+        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-list tr');
         let visibleCount = 0;
 
         items.forEach(item => {
@@ -65,6 +66,7 @@ document.getElementById('clear-search')?.addEventListener('click', () => {
         searchInput.focus();
         
         const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
+        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-list tr');
         items.forEach(item => item.style.display = '');
         
         document.getElementById('no-results')?.classList.add('hidden');
@@ -752,19 +754,21 @@ async function renderClientDashboard(userId) {
     }
 
     // Filter by Tab
-    const filteredByTab = (docs || []).filter(doc => {
+    let filteredByTab = (docs || []).filter(doc => {
+        const fStatus = doc.final_status || 'Pending';
         if (activeClientTab === 'submitted') {
-            return doc.final_status === 'Submitted';
+            return fStatus === 'Submitted';
         }
         if (activeClientTab === 'completed') {
-            return doc.final_status === 'Completed' || doc.final_status === 'Cancelled';
+            return fStatus === 'Completed' || fStatus === 'Cancelled';
         }
-        // Active tab: Pending or empty final_status
-        return doc.final_status === 'Pending' || !doc.final_status;
+        // Active tab: Pending
+        return fStatus === 'Pending';
     });
 
     if (filteredByTab.length === 0) {
         container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
@@ -803,6 +807,7 @@ async function renderClientDashboard(userId) {
                 </select>
             </td>
             <td><span class="badge ${doc.final_status || 'Pending'}">${doc.final_status === 'Submitted' ? 'Pending-Submitted' : (doc.final_status || 'Pending')}</span></td>
+            <td><span class="badge ${doc.final_status || 'Pending'}">${doc.final_status || 'Pending'}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
@@ -844,6 +849,7 @@ window.submitToAdmin = async (id) => {
     const searchInput = document.getElementById('dashboard-search');
     if (filterSelect) filterSelect.value = 'all';
     if (searchInput) searchInput.value = '';
+    document.getElementById('no-results')?.classList.add('hidden');
     document.getElementById('clear-search')?.classList.add('hidden');
 
     const { error } = await supabaseClient
