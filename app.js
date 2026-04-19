@@ -144,9 +144,45 @@ reasonCodeSelect?.addEventListener('change', (e) => {
     reasonDescInput.value = REASON_DESC_MAP[e.target.value] || '';
 });
 
+// Helper to calculate Period and ISO Week
+const updateTrackingFields = (dateVal) => {
+    const periodInput = document.getElementById('doc-period');
+    const weekInput = document.getElementById('doc-week');
+    
+    if (!dateVal || !periodInput || !weekInput) return;
+
+    const date = new Date(dateVal);
+    // Calculate Period (P1 - P12 based on month)
+    periodInput.value = `P${date.getMonth() + 1}`;
+
+    // Calculate ISO Week Number
+    const tdt = new Date(date.valueOf());
+    const dayn = (date.getDay() + 6) % 7;
+    tdt.setDate(tdt.getDate() - dayn + 3);
+    const firstThursday = tdt.valueOf();
+    tdt.setMonth(0, 1);
+    if (tdt.getDay() !== 4) {
+        tdt.setMonth(0, 1 + ((4 - tdt.getDay()) + 7) % 7);
+    }
+    const week = 1 + Math.ceil((firstThursday - tdt) / 604800000);
+    weekInput.value = week;
+};
+
+document.getElementById('doc-date')?.addEventListener('change', (e) => {
+    updateTrackingFields(e.target.value);
+});
+
 document.getElementById('upload-trigger')?.addEventListener('click', () => {
     modalOverlay.classList.remove('hidden');
     docTitleInput.focus();
+    
+    // Set default date to today and trigger auto-calc
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('doc-date');
+    if (dateInput) {
+        dateInput.value = today;
+        updateTrackingFields(today);
+    }
 });
 
 document.getElementById('close-modal')?.addEventListener('click', () => {
