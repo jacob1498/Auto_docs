@@ -441,10 +441,6 @@ signupForm.addEventListener('submit', async (e) => {
         if (error) throw error;
         
         if (data.user) {
-            // Background attempt to create profile record - capture error so it doesn't block UI
-            const { error: pError } = await supabaseClient.from('profiles').insert([{ id: data.user.id, role }]);
-            if (pError) console.warn("Profile table insert deferred (usually RLS/Confirmation issue):", pError.message);
-
             if (!data.session) {
                 alert("Account created successfully! Please check your email inbox to confirm your account before logging in.");
                 document.getElementById('go-to-login').click();
