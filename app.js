@@ -331,6 +331,7 @@ addDocForm?.addEventListener('submit', async (e) => {
             title, 
             category, 
             owner_name: ownerName,
+        status: initialStatus || 'Active',
             period,
             week: week ? parseInt(week) : null,
             doc_date: docDate || null
@@ -357,8 +358,6 @@ addDocForm?.addEventListener('submit', async (e) => {
                 .eq('id', editingId);
             error = updateError;
         } else {
-            // Set initial status on creation if not already part of insertData
-            insertData.status = initialStatus || 'Active';
             const { error: insertError } = await supabaseClient
                 .from('documents')
                 .insert([insertData]);
@@ -425,6 +424,7 @@ window.editDocument = async (id) => {
     document.getElementById('doc-category-select').value = doc.category;
     document.getElementById('doc-owner-name').value = doc.owner_name;
     document.getElementById('doc-date').value = doc.doc_date;
+    document.getElementById('doc-status-select').value = doc.status;
     
     const isIAAF = doc.category === 'IAAF';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
