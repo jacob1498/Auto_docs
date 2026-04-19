@@ -234,6 +234,13 @@ docTitleInput?.addEventListener('input', (e) => {
 
 addDocForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        alert("User session not found. Please log in again.");
+        return;
+    }
+
     const btn = e.target.querySelector('button[type="submit"]');
     const title = document.getElementById('doc-title-input').value.trim();
     const category = document.getElementById('doc-category-select').value;
@@ -265,8 +272,6 @@ addDocForm?.addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner"></div> Creating...';
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
     try {
         // Check for duplicate control number if category is IAAF
         if (category === 'IAAF') {
