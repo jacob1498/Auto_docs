@@ -20,6 +20,10 @@ let currentAdminTab = 'all';
 // Tab Switching Logic
 window.switchClientTab = async (tab) => {
     currentClientTab = tab;
+    
+    // Reset the global status filter to prevent conflicts with tab-specific logic
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderClientDashboard(session.user.id);
@@ -27,6 +31,10 @@ window.switchClientTab = async (tab) => {
 
 window.switchAdminTab = async (tab) => {
     currentAdminTab = tab;
+
+    // Reset the global status filter to prevent conflicts with tab-specific logic
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) renderAdminDashboard();
@@ -54,11 +62,15 @@ document.getElementById('dashboard-search')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
+        // Fix: Target rows in BOTH admin and client tables
+        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-table tbody tr');
         let visibleCount = 0;
 
+        const clearBtn = document.getElementById('clear-search');
+        if (clearBtn) clearBtn.classList.toggle('hidden', term === '');
+
         items.forEach(item => {
-            const text = item.innerText.toLowerCase();
+            const text = item.textContent.toLowerCase();
             const matches = text.includes(term);
             item.style.display = matches ? '' : 'none';
             if (matches) visibleCount++;
@@ -79,7 +91,8 @@ document.getElementById('clear-search')?.addEventListener('click', () => {
         searchInput.value = '';
         searchInput.focus();
         
-        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr');
+        // Fix: Clear visibility for both tables
+        const items = document.querySelectorAll('.doc-card, #admin-doc-table tbody tr, #client-doc-table tbody tr');
         items.forEach(item => item.style.display = '');
         
         document.getElementById('no-results')?.classList.add('hidden');
@@ -97,11 +110,13 @@ document.getElementById('sort-date')?.addEventListener('change', async () => {
 document.getElementById('reset-filters')?.addEventListener('click', async () => {
     const searchInput = document.getElementById('dashboard-search');
     const sortSelect = document.getElementById('sort-date');
+    const filterSelect = document.getElementById('filter-status');
     const clearSearchBtn = document.getElementById('clear-search');
     const noResults = document.getElementById('no-results');
 
     if (searchInput) searchInput.value = '';
     if (sortSelect) sortSelect.value = 'desc';
+    if (filterSelect) filterSelect.value = 'all';
     if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
     if (noResults) noResults.classList.add('hidden');
 
@@ -588,6 +603,7 @@ async function renderAdminDashboard() {
     });
 
     const sortBy = document.getElementById('sort-date').value;
+    const filterStatus = document.getElementById('filter-status').value;
 
     let query = supabaseClient
         .from('documents')
@@ -599,6 +615,10 @@ async function renderAdminDashboard() {
         query = query.eq('status', 'Revised');
     } else if (currentAdminTab === 'completed') {
         query = query.eq('final_status', 'Completed');
+    }
+
+    if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -674,6 +694,7 @@ async function renderClientDashboard(userId) {
     });
 
     const sortBy = document.getElementById('sort-date').value;
+    const filterStatus = document.getElementById('filter-status').value;
 
     let query = supabaseClient
         .from('documents')
@@ -686,6 +707,10 @@ async function renderClientDashboard(userId) {
         query = query.eq('final_status', 'Completed');
     } else { // active
         query = query.not('status', 'eq', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+    }
+
+    if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -765,12 +790,18 @@ window.updateStatus = async (id, status) => {
 window.submitToAdmin = async (id) => {
     // Set the tab to 'submitted' so the document "moves" in the UI immediately
     currentClientTab = 'submitted';
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     await updateStatus(id, 'Adjusted - for Routing');
 };
 
 window.receiveDocument = async (id) => {
     // Set the tab to 'completed' for admin view
     currentAdminTab = 'completed';
+    const filterSelect = document.getElementById('filter-status');
+    if (filterSelect) filterSelect.value = 'all';
+
     await updateFinalStatus(id, 'Completed');
 };
 
