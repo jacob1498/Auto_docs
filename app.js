@@ -762,7 +762,7 @@ async function renderClientDashboard(userId) {
     } else if (currentClientTab === 'submitted') {
         query = query.eq('status', 'Submitted');
     } else { // active
-        query = query.not('status', 'in', '("Submitted","Completed","Cancelled")');
+        query = query.not('status', 'in', '("Submitted","Completed")');
     }
 
     const from = currentClientPage * PAGE_SIZE;
