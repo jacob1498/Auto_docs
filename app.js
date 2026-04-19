@@ -314,7 +314,6 @@ addDocForm?.addEventListener('submit', async (e) => {
         if (!editingId) {
             insertData.owner_id = user.id;
             insertData.status = 'For Adjustment - for Routing';
-            insertData.final_status = 'Pending';
         }
 
         if (category === 'IAAF') {
@@ -599,11 +598,11 @@ async function renderAdminDashboard() {
         .select(`*, profiles!owner_id(email)`);
 
     if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing');
     } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised').not('final_status', 'eq', 'Completed');
+        query = query.eq('status', 'Revised');
     } else if (currentAdminTab === 'completed') {
-        query = query.eq('final_status', 'Completed');
+        query = query.eq('status', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -620,7 +619,7 @@ async function renderAdminDashboard() {
             errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
         }
         
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: #e11d48; padding: 2rem;">
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 2rem;">
             <strong>Error:</strong> ${errorMsg}
         </td></tr>`;
         return;
@@ -650,30 +649,23 @@ async function renderAdminDashboard() {
             <td style="font-family: monospace; font-size: 0.85rem;">${doc.control_number || '—'}</td>
             <td style="font-size: 0.8rem; color: var(--gray-600);">${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
             <td><span class="badge ${doc.status}">${doc.status}</span></td>
-            <td>
-                <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
-                    <option value="Pending" ${doc.final_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Completed" ${doc.final_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                    <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                </select>
-            </td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
-                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
                         <span class="material-symbols-outlined">check_circle</span>
                     </button>
                     <button class="icon-btn" onclick="returnToClient('${doc.id}')" title="Return to Client"
-                        ${doc.final_status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
+                        ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
                         <span class="material-symbols-outlined">assignment_return</span>
                     </button>
                     <button class="icon-btn delete" onclick="deleteDocument('${doc.id}')" title="Delete"><span class="material-symbols-outlined">delete</span></button>
                 </div>
             </td>
         </tr>
-    `}).join('') : '<tr><td colspan="10" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
+    `}).join('') : '<tr><td colspan="9" style="text-align:center; padding: 2rem;">No documents found in the system.</td></tr>';
 }
 
 async function renderClientDashboard(userId) {
@@ -693,11 +685,11 @@ async function renderClientDashboard(userId) {
         .eq('owner_id', userId);
 
     if (currentClientTab === 'completed') {
-        query = query.eq('final_status', 'Completed');
+        query = query.eq('status', 'Completed');
     } else if (currentClientTab === 'submitted') {
-        query = query.eq('status', 'Adjusted - for Routing').not('final_status', 'eq', 'Completed');
+        query = query.eq('status', 'Adjusted - for Routing');
     } else { // active
-        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').not('final_status', 'eq', 'Completed');
+        query = query.neq('status', 'Adjusted - for Routing').neq('status', 'Cancelled').neq('status', 'Completed');
     }
 
     const { data: docs, error } = await query.order('created_at', { 
@@ -709,12 +701,12 @@ async function renderClientDashboard(userId) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
     if (!docs || docs.length === 0) {
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--gray-500);">No documents found.</td></tr>`;
         return;
     }
 
@@ -741,17 +733,16 @@ async function renderClientDashboard(userId) {
                     <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
                 </select>
             </td>
-            <td><span class="badge ${doc.final_status}">${doc.final_status || 'Pending'}</span></td>
             <td style="font-size: 0.75rem;">${updatedDate}</td>
             <td><span class="badge ${agingClass}">${aging} Days</span></td>
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
-                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.status === 'Adjusted - for Routing' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
                     </button>
                     <button class="icon-btn" onclick="submitToAdmin('${doc.id}')" title="Submit to Admin"
-                        ${doc.status === 'Adjusted - for Routing' || doc.final_status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        ${doc.status === 'Adjusted - for Routing' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">send</span>
                     </button>
                 </div>
@@ -798,39 +789,11 @@ window.submitToAdmin = async (id) => {
 
 window.receiveDocument = async (id) => {
     currentAdminTab = 'completed';
-    await updateFinalStatus(id, 'Completed');
+    await updateStatus(id, 'Completed');
 };
 
 window.returnToClient = async (id) => {
     if (!confirm("Return this document to the client for revision?")) return;
     currentAdminTab = 'returned';
     await updateStatus(id, 'Revised');
-};
-
-window.updateFinalStatus = async (id, final_status) => {
-    try {
-        const { error } = await supabaseClient
-            .from('documents')
-            .update({ 
-                final_status, 
-                updated_at: new Date().toISOString() 
-            })
-            .eq('id', id);
-        
-        if (error) throw error;
-
-        showToast(`Final Status: ${final_status}`);
-        
-        // Sync tab view based on action
-        if (final_status === 'Completed') {
-            if (currentUserRole === 'admin') currentAdminTab = 'completed';
-            else currentClientTab = 'completed';
-        }
-
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) showApp(session.user);
-    } catch (err) {
-        console.error("Status update failed:", err);
-        alert("Update failed: " + err.message);
-    }
 };
