@@ -134,6 +134,11 @@ categorySelect?.addEventListener('change', (e) => {
     controlNoInput.required = isIAAF;
     reasonCodeSelect.required = isIAAF;
     if (adjTypeSelect) adjTypeSelect.required = isIAAF;
+
+    if (isIAAF && !controlNoInput.value) {
+        const year = new Date().getFullYear();
+        controlNoInput.value = `ECOM-${year}-0000`;
+    }
 });
 
 reasonCodeSelect?.addEventListener('change', (e) => {
@@ -148,13 +153,13 @@ document.getElementById('upload-trigger')?.addEventListener('click', () => {
 document.getElementById('close-modal')?.addEventListener('click', () => {
     modalOverlay.classList.add('hidden');
     addDocForm.reset();
-    if (charCounter) charCounter.innerText = '0 / 50';
+    if (charCounter) charCounter.innerText = '0 / 200';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
 });
 
 docTitleInput?.addEventListener('input', (e) => {
     const length = e.target.value.length;
-    if (charCounter) charCounter.innerText = `${length} / 50`;
+    if (charCounter) charCounter.innerText = `${length} / 200`;
 });
 
 addDocForm?.addEventListener('submit', async (e) => {
@@ -162,6 +167,7 @@ addDocForm?.addEventListener('submit', async (e) => {
     const btn = e.target.querySelector('button[type="submit"]');
     const title = document.getElementById('doc-title-input').value.trim();
     const category = document.getElementById('doc-category-select').value;
+    const ownerName = document.getElementById('doc-owner-name').value;
     
     // IAAF specific values
     const controlNo = document.getElementById('doc-control-no').value;
@@ -179,11 +185,23 @@ addDocForm?.addEventListener('submit', async (e) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     
     try {
+        // Check for duplicate control number if category is IAAF
+        if (category === 'IAAF') {
+            const { data: existing } = await supabaseClient
+                .from('documents')
+                .select('id')
+                .eq('control_number', controlNo)
+                .single();
+            if (existing) throw new Error("This Control Number already exists.");
+        }
+
         const insertData = { 
             title, 
             category, 
+            owner_name: ownerName,
             owner_id: user.id, 
-            status: 'pending' 
+            status: 'For Adjustment - for Routing',
+            final_status: 'Submitted to Admin'
         };
 
         if (category === 'IAAF') {
@@ -201,7 +219,7 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
-        if (charCounter) charCounter.innerText = '0 / 50';
+        if (charCounter) charCounter.innerText = '0 / 200';
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showToast("Document added successfully!");
         showApp(user);
@@ -413,13 +431,26 @@ async function renderAdminDashboard() {
                 <div style="font-weight: 600;">${doc.title}</div>
                 ${doc.category === 'IAAF' ? `<div style="font-size: 0.75rem; color: var(--gray-600);">${doc.control_number || ''}</div>` : ''}
             </td>
-            <td>${doc.title}</td>
+            <td>${doc.owner_name || 'N/A'}</td>
             <td><span style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">${doc.category || 'N/A'}</span></td>
             <td>${doc.profiles ? doc.profiles.email : 'Unknown'}</td>
-            <td><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td>
+                <select onchange="updateStatus('${doc.id}', this.value)" class="status-select">
+                    <option value="Adjusted - for Routing" ${doc.status === 'Adjusted - for Routing' ? 'selected' : ''}>Adjusted - for Routing</option>
+                    <option value="For Adjustment - for Routing" ${doc.status === 'For Adjustment - for Routing' ? 'selected' : ''}>For Adjustment - for Routing</option>
+                    <option value="Revised" ${doc.status === 'Revised' ? 'selected' : ''}>Revised</option>
+                    <option value="Cancelled" ${doc.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+            </td>
+            <td>
+                <select onchange="updateFinalStatus('${doc.id}', this.value)" class="status-select">
+                    <option value="Submitted to Admin" ${doc.final_status === 'Submitted to Admin' ? 'selected' : ''}>Submitted to Admin</option>
+                    <option value="Within Operation Area" ${doc.final_status === 'Within Operation Area' ? 'selected' : ''}>Within Operation Area</option>
+                    <option value="Cancelled" ${doc.final_status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+            </td>
             <td>
                 <div class="action-btns">
-                    <button onclick="updateStatus('${doc.id}', 'approved')" style="background: var(--primary); color: white;">Approve</button>
                     <button class="btn-danger" onclick="deleteDocument('${doc.id}')">Delete</button>
                 </div>
             </td>
@@ -455,12 +486,14 @@ async function renderClientDashboard(userId) {
             </div>
             <div style="flex: 1;">
                 <h3 style="margin: 0; font-size: 1.125rem;">${doc.title}</h3>
+                <p style="font-size: 0.85rem; color: var(--gray-800); font-weight: 600; margin: 4px 0;">Owner: ${doc.owner_name || 'N/A'}</p>
                 <p style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin: 4px 0;">Category: ${doc.category || 'N/A'}</p>
                 ${doc.category === 'IAAF' ? `
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Control: ${doc.control_number || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Type: ${doc.adj_type || 'N/A'}</p>
                     <p style="font-size: 0.8rem; color: var(--gray-600); margin: 2px 0;">Reason: ${doc.reason_code || ''} - ${doc.reason_description || ''}</p>
                 ` : ''}
+                <p style="font-size: 0.8rem; color: var(--primary); margin: 4px 0;">Final Status: ${doc.final_status || 'Submitted to Admin'}</p>
                 <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">Last updated: ${new Date(doc.created_at || Date.now()).toLocaleDateString()}</p>
             </div>
             <div class="card-actions" style="margin-top: 1rem; border-top: 1px solid var(--gray-100); padding-top: 1rem;">
@@ -479,6 +512,19 @@ window.updateStatus = async (id, status) => {
     
     if (!error) {
         showToast(`Document ${status}`);
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        showApp(user);
+    }
+};
+
+window.updateFinalStatus = async (id, final_status) => {
+    const { error } = await supabaseClient
+        .from('documents')
+        .update({ final_status })
+        .eq('id', id);
+    
+    if (!error) {
+        showToast(`Final Status: ${final_status}`);
         const { data: { user } } = await supabaseClient.auth.getUser();
         showApp(user);
     }
