@@ -395,6 +395,49 @@ tr:hover {
     background: #fef2f2 !important;
 }
 
+.user-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    transition: background-color 0.2s;
+}
+
+.user-profile-trigger:hover {
+    background-color: var(--gray-50);
+}
+
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+#header-user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+#header-user-role {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    text-transform: capitalize;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+
 /* Simple Analytics Bar Styles */
 .chart-row {
     display: flex;
