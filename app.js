@@ -787,14 +787,14 @@ window.updateStatus = async (id, status, customMsg = null) => {
         
         if (updateError) throw updateError;
 
-        // 5. Show feedback
+        // 5. Success Notification
         showToast(customMsg || `Status updated: ${status}`);
         
-        // 6. Show loading state in the correct table
+        // 6. Show loading state with CORRECT column spans
         const colCount = role === 'admin' ? 9 : 8;
         const tbody = role === 'admin' ? 
             document.querySelector('#admin-doc-table tbody') : 
-            document.getElementById('client-doc-list');
+            document.querySelector('#client-doc-table tbody');
         
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center; padding: 2rem;"><div class="spinner" style="border-top-color: var(--primary); margin: auto;"></div></td></tr>`;
@@ -821,3 +821,4 @@ window.returnToClient = async (id) => {
     currentAdminTab = 'returned';
     await updateStatus(id, 'Revised');
 };
+
