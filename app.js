@@ -103,11 +103,41 @@ document.getElementById('reset-filters')?.addEventListener('click', async () => 
     if (session) showApp(session.user);
 });
 
+// Reason Code Mapping
+const REASON_DESC_MAP = {
+    "13": "Cycle Count",
+    "3": "Wrong received",
+    "93": "B1T1 / Manual Picked",
+    "83": "LBR to customer",
+    "90": "Missing Items (Overages if Writeback)",
+    "10": "Damaged",
+    "9": "Expired",
+    "70": "Marketing Expense (Return Refund)",
+    "91": "SKU conversion"
+};
+
 // Modal Logic
 const modalOverlay = document.getElementById('modal-overlay');
 const addDocForm = document.getElementById('add-doc-form');
 const docTitleInput = document.getElementById('doc-title-input');
 const charCounter = document.getElementById('char-counter');
+const categorySelect = document.getElementById('doc-category-select');
+const iaafSection = document.getElementById('iaaf-specific-fields');
+const reasonCodeSelect = document.getElementById('doc-reason-code');
+const reasonDescInput = document.getElementById('doc-reason-desc');
+const controlNoInput = document.getElementById('doc-control-no');
+
+categorySelect?.addEventListener('change', (e) => {
+    const isIAAF = e.target.value === 'IAAF';
+    iaafSection.classList.toggle('hidden', !isIAAF);
+    // Toggle required attributes for IAAF fields
+    controlNoInput.required = isIAAF;
+    reasonCodeSelect.required = isIAAF;
+});
+
+reasonCodeSelect?.addEventListener('change', (e) => {
+    reasonDescInput.value = REASON_DESC_MAP[e.target.value] || '';
+});
 
 document.getElementById('upload-trigger')?.addEventListener('click', () => {
     modalOverlay.classList.remove('hidden');
@@ -118,6 +148,7 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     modalOverlay.classList.add('hidden');
     addDocForm.reset();
     if (charCounter) charCounter.innerText = '0 / 50';
+    iaafSection.classList.add('hidden');
 });
 
 docTitleInput?.addEventListener('input', (e) => {
@@ -130,6 +161,11 @@ addDocForm?.addEventListener('submit', async (e) => {
     const btn = e.target.querySelector('button[type="submit"]');
     const title = document.getElementById('doc-title-input').value.trim();
     const category = document.getElementById('doc-category-select').value;
+    
+    // IAAF specific values
+    const controlNo = document.getElementById('doc-control-no').value;
+    const adjType = document.getElementById('doc-adj-type').value;
+    const reasonCode = document.getElementById('doc-reason-code').value;
 
     if (title.length < 3) {
         alert("Title must be at least 3 characters long.");
@@ -142,15 +178,30 @@ addDocForm?.addEventListener('submit', async (e) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     
     try {
+        const insertData = { 
+            title, 
+            category, 
+            owner_id: user.id, 
+            status: 'pending' 
+        };
+
+        if (category === 'IAAF') {
+            insertData.control_number = controlNo;
+            insertData.adj_type = adjType;
+            insertData.reason_code = reasonCode;
+            insertData.reason_description = REASON_DESC_MAP[reasonCode];
+        }
+
         const { error } = await supabaseClient
             .from('documents')
-            .insert([{ title, category, owner_id: user.id, status: 'pending' }]);
+            .insert([insertData]);
 
         if (error) throw error;
 
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
         if (charCounter) charCounter.innerText = '0 / 50';
+        iaafSection.classList.add('hidden');
         showToast("Document added successfully!");
         showApp(user);
     } catch (err) {
@@ -393,7 +444,7 @@ async function renderClientDashboard(userId) {
         <div class="doc-card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div class="doc-icon">
-                    <span class="material-symbols-outlined">description</span>
+                    <span class="material-symbols-outlined">${doc.category === 'IAAF' ? 'account_balance' : (doc.category === 'IR' ? 'analytics' : 'description')}</span>
                 </div>
                 <span class="badge ${doc.status}">${doc.status}</span>
             </div>
