@@ -514,7 +514,7 @@ async function renderAdminDashboard() {
 
     let query = supabaseClient
         .from('documents')
-        .select(`*, profiles!documents_owner_id_fkey(email)`);
+        .select(`*, profiles!owner_id(email)`);
 
     if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
@@ -524,13 +524,16 @@ async function renderAdminDashboard() {
         ascending: sortBy === 'asc' 
     });
 
-    console.log("Admin Dashboard Data:", docs); // Debugging line
-
     if (error) {
         console.error("Admin Fetch Error:", error.message);
         const tbody = document.querySelector('#admin-doc-table tbody');
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--danger);">
-            Error loading data: ${error.message}
+        let errorMessage = error.message;
+        // Helpful tip for ambiguity errors
+        if (errorMessage.includes("more than one relationship")) {
+            errorMessage = "Database ambiguity error. Please refresh the schema cache in Supabase.";
+        }
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 2rem;">
+            <strong>Error:</strong> ${errorMessage}
         </td></tr>`;
         return;
     }
@@ -596,13 +599,11 @@ async function renderClientDashboard(userId) {
         ascending: sortBy === 'asc' 
     });
 
-    console.log("Client Dashboard Data:", docs); // Debugging line
-
     const container = document.getElementById('client-doc-list');
 
     if (error) {
         console.error("Client Fetch Error:", error.message);
-        container.innerHTML = `<p style="color: var(--danger);">Error loading your documents.</p>`;
+        container.innerHTML = `<p style="color: #e11d48; text-align: center; grid-column: 1/-1;">Error loading your documents: ${error.message}</p>`;
         return;
     }
 
