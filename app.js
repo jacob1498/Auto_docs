@@ -708,7 +708,7 @@ async function updateStatsDashboard() {
         adminAgingSection.classList.remove('hidden');
 
         // Calculate Aging Brackets for Submitted docs
-        const pendingDocs = docs.filter(d => d.status === 'Submitted');
+        const pendingDocs = docs.filter(d => !['Completed', 'Cancelled'].includes(d.status));
         const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8-11 Days': 0, '12+ Days': 0 };
         const clientAging = {};
         
@@ -1173,6 +1173,9 @@ async function renderAdminDashboard(isSilent = false) {
 
     // Apply Aging Bracket filter if active
     if (currentAdminAgingFilter) {
+        // Ensure we only show pending/in-progress docs when filtering by aging
+        query = query.not('status', 'in', '("Completed","Cancelled")');
+        
         const now = new Date();
         if (currentAdminAgingFilter === '0-3 Days') {
             const limit = new Date();
@@ -1507,7 +1510,7 @@ window.returnToClient = async (id) => {
 
 window.filterByAging = async (label) => {
     currentAdminAgingFilter = label;
-    currentAdminTab = 'submitted'; // Force tab to submitted as aging is for pending docs
+    currentAdminTab = 'all'; // Show all in-progress monitoring across all categories
     currentAdminPage = 0;
     await switchSidebarView('documents');
 };
