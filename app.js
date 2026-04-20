@@ -422,13 +422,18 @@ addDocForm?.addEventListener('submit', async (e) => {
             if (existing) throw new Error("This Control Number already exists.");
         }
 
+        const now = new Date();
+        const timePart = now.toISOString().split('T')[1];
+        const createdAt = docDate ? `${docDate}T${timePart}` : now.toISOString();
+
         const insertData = { 
             title, 
             category, 
             owner_name: ownerName,
         status: initialStatus || 'Active',
             period,
-        updated_at: new Date().toISOString(),
+            created_at: createdAt,
+            updated_at: now.toISOString(),
             week: week ? parseInt(week) : null,
             doc_date: docDate || null
         };
