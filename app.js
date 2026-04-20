@@ -32,6 +32,8 @@ const PAGE_SIZE = 10;
 let monthlyGroupsCache = {}; // Store report data for export
 let realtimeSubscription = null;
 let autoRefreshInterval = null;
+let lastAdminTableHTML = "";
+let lastClientTableHTML = "";
 
 // Helper to synchronize search UI and state
 function clearSearchUI() {
@@ -39,6 +41,8 @@ function clearSearchUI() {
     document.querySelectorAll('.dashboard-search').forEach(input => input.value = '');
     document.querySelectorAll('.clear-search-btn').forEach(btn => btn.classList.add('hidden'));
     document.getElementById('no-results')?.classList.add('hidden');
+    lastAdminTableHTML = "";
+    lastClientTableHTML = "";
 }
 
 // Tab Switching Logic
@@ -262,6 +266,8 @@ const dateInput = document.getElementById('doc-date');
 
 categorySelect?.addEventListener('change', (e) => {
     const isIAAF = e.target.value === 'IAAF';
+    const modalCard = document.querySelector('.modal-card');
+    if (modalCard) modalCard.classList.toggle('modal-wide', isIAAF);
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
     // Toggle required attributes for IAAF fields
     controlNoInput.required = isIAAF;
@@ -350,6 +356,8 @@ document.getElementById('upload-trigger')?.addEventListener('click', () => {
 document.getElementById('close-modal')?.addEventListener('click', () => {
     modalOverlay.classList.add('hidden');
     addDocForm.reset();
+    const modalCard = document.querySelector('.modal-card');
+    if (modalCard) modalCard.classList.remove('modal-wide');
     if (charCounter) charCounter.innerText = '0 / 200';
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
     // Reset disclosure
@@ -483,6 +491,8 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
+        const modalCard = document.querySelector('.modal-card');
+        if (modalCard) modalCard.classList.remove('modal-wide');
         showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
         editingId = null;
         document.querySelector('.modal-card h2').innerText = "Add Document";
@@ -528,6 +538,8 @@ window.editDocument = async (id) => {
     document.getElementById('doc-status-select').value = doc.status;
     
     const isIAAF = doc.category === 'IAAF';
+    const modalCard = document.querySelector('.modal-card');
+    if (modalCard) modalCard.classList.toggle('modal-wide', isIAAF);
     document.querySelectorAll('.iaaf-only').forEach(el => el.classList.toggle('hidden', !isIAAF));
     
     if (isIAAF && doc.control_number) {
@@ -664,7 +676,7 @@ signupForm.addEventListener('submit', async (e) => {
         
         if (data.user) {
             if (!data.session) {
-                alert("Account created successfully! Please check your email inbox to confirm your account before logging in.");
+                alert("Verification Required: A confirmation link has been sent to your email. Please verify your account before signing in.\n\nNote: On the Supabase Free Tier, there is a limit of 3 emails per hour. If you don't see it, check your spam or try again later.");
                 document.getElementById('go-to-login').click();
             } else {
                 // If confirmation is off, the auth listener will fire, but we'll trigger showApp manually to be safe
@@ -672,7 +684,12 @@ signupForm.addEventListener('submit', async (e) => {
             }
         }
     } catch (err) {
-        alert(err.message);
+        if (err.message.includes("rate limit")) {
+            alert("Supabase Limit Reached: " + err.message + "\n\nTip: Go to your Supabase Dashboard > Authentication > Providers and disable 'Confirm Email' to bypass email rate limits during testing.");
+        } else {
+            alert("Sign Up Error: " + err.message);
+        }
+        console.error("Detailed Auth Error:", err);
     } finally {
         btn.disabled = false;
         btn.innerText = "Sign Up";
@@ -1137,6 +1154,9 @@ async function renderAdminDashboard(isSilent = false) {
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('client-view').classList.add('hidden');
     
+    const topLoader = document.getElementById('top-loader');
+    if (isSilent && topLoader) topLoader.classList.add('loading');
+    
     const tbody = document.querySelector('#admin-doc-table tbody');
     // Only show loading state if not a silent background refresh
     if (!isSilent) {
@@ -1212,6 +1232,8 @@ async function renderAdminDashboard(isSilent = false) {
         .order('created_at', { ascending: false })
         .range(from, to);
 
+    if (topLoader) topLoader.classList.remove('loading');
+
     if (error) {
         console.error("Admin Fetch Error:", error.message);
         const tbody = document.querySelector('#admin-doc-table tbody');
@@ -1241,7 +1263,7 @@ async function renderAdminDashboard(isSilent = false) {
     document.querySelector('#admin-view .table-container')?.classList.remove('hidden');
     document.getElementById('no-results')?.classList.add('hidden');
 
-    tbody.innerHTML = hasDocs ? docs.map(doc => {
+    const newHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.doc_date || doc.created_at);
         const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
@@ -1283,6 +1305,11 @@ async function renderAdminDashboard(isSilent = false) {
             </td>
         </tr>`;
 
+    if (newHTML !== lastAdminTableHTML) {
+        tbody.innerHTML = newHTML;
+        lastAdminTableHTML = newHTML;
+    }
+
     renderPagination(count, currentAdminPage, 'admin');
 }
 
@@ -1291,6 +1318,9 @@ async function renderClientDashboard(userId, isSilent = false) {
     document.getElementById('admin-view').classList.add('hidden');
 
     const container = document.getElementById('client-doc-list');
+    const topLoader = document.getElementById('top-loader');
+    if (isSilent && topLoader) topLoader.classList.add('loading');
+
     // Only show loading state if not a silent background refresh
     if (!isSilent) {
         container.innerHTML = `
@@ -1349,6 +1379,8 @@ async function renderClientDashboard(userId, isSilent = false) {
         .order('created_at', { ascending: false })
         .range(from, to);
 
+    if (topLoader) topLoader.classList.remove('loading');
+
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
@@ -1361,7 +1393,7 @@ async function renderClientDashboard(userId, isSilent = false) {
     document.querySelector('#client-view .table-container')?.classList.remove('hidden');
     document.getElementById('no-results')?.classList.add('hidden');
 
-    container.innerHTML = hasDocs ? docs.map(doc => {
+    const newHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.doc_date || doc.created_at);
         const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
@@ -1401,6 +1433,11 @@ async function renderClientDashboard(userId, isSilent = false) {
                 ${currentSearchTerm ? 'No documents found matching your search.' : 'You have no documents in this tab.'}
             </td>
         </tr>`;
+
+    if (newHTML !== lastClientTableHTML) {
+        container.innerHTML = newHTML;
+        lastClientTableHTML = newHTML;
+    }
 
     renderPagination(count, currentClientPage, 'client');
 }

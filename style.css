@@ -17,6 +17,32 @@
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
+/* Top Progress Bar for Refreshing */
+.refresh-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: transparent;
+    z-index: 1001;
+    overflow: hidden;
+}
+.refresh-progress.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 30%;
+    height: 100%;
+    background: var(--primary);
+    animation: progressLoop 1.5s infinite linear;
+}
+@keyframes progressLoop {
+    0% { left: -30%; }
+    100% { left: 100%; }
+}
+
 * {
     box-sizing: border-box;
 }
@@ -831,6 +857,12 @@ tr:hover {
     animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     max-width: 600px;
     width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-card.modal-wide {
+    max-width: 850px;
 }
 
 @keyframes modalIn {
