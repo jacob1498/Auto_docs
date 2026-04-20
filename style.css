@@ -508,8 +508,8 @@ tr:hover {
 
 /* Column alignment for Last Update, Aging, and Actions (Header and Content) */
 .col-meta, 
-th:nth-last-child(-n+3), 
-td:nth-last-child(-n+3) {
+th:nth-last-child(-n+4), 
+td:nth-last-child(-n+4) {
     text-align: center;
     white-space: nowrap;
 }

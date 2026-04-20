@@ -1088,7 +1088,7 @@ async function renderAdminDashboard(isSilent = false) {
     if (!isSilent) {
         tbody.innerHTML = `
         <tr>
-            <td colspan="8">
+            <td colspan="9">
                 <div class="table-loader-content">
                     <div class="spinner spinner-dark"></div>
                     <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Fetching records...</span>
@@ -1159,7 +1159,7 @@ async function renderAdminDashboard(isSilent = false) {
             errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
         }
         
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 2rem;">
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 2rem;">
             <strong>Error:</strong> ${errorMsg}
         </td></tr>`;
         return;
@@ -1180,6 +1180,7 @@ async function renderAdminDashboard(isSilent = false) {
 
     tbody.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
+        const createdDate = new Date(doc.created_at).toLocaleString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
@@ -1194,6 +1195,7 @@ async function renderAdminDashboard(isSilent = false) {
             <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem; text-align: center;">${doc.control_number || '—'}</td>
             <td style="text-align: center;"><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td class="col-meta" style="font-size: 0.75rem; text-align: center;">${createdDate}</td>
             <td class="col-meta" style="font-size: 0.75rem; text-align: center;">${updatedDate}</td>
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td class="col-meta">
@@ -1212,7 +1214,7 @@ async function renderAdminDashboard(isSilent = false) {
         </tr>
     `}).join('') : `
         <tr>
-            <td colspan="8" style="text-align:center; padding: 4rem; color: var(--gray-400);">
+            <td colspan="9" style="text-align:center; padding: 4rem; color: var(--gray-400);">
                 <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem;">search_off</span>
                 ${currentSearchTerm ? 'No documents found matching your search.' : 'No documents available in this category.'}
             </td>
@@ -1230,7 +1232,7 @@ async function renderClientDashboard(userId, isSilent = false) {
     if (!isSilent) {
         container.innerHTML = `
         <tr>
-            <td colspan="8">
+            <td colspan="9">
                 <div class="table-loader-content">
                     <div class="spinner spinner-dark"></div>
                     <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Loading your documents...</span>
@@ -1287,7 +1289,7 @@ async function renderClientDashboard(userId, isSilent = false) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
+        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
@@ -1298,6 +1300,7 @@ async function renderClientDashboard(userId, isSilent = false) {
 
     container.innerHTML = hasDocs ? docs.map(doc => {
         const aging = calculateAging(doc.created_at);
+        const createdDate = new Date(doc.created_at).toLocaleString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
@@ -1312,6 +1315,7 @@ async function renderClientDashboard(userId, isSilent = false) {
             <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
             <td style="font-family: monospace; font-size: 0.85rem; text-align: center;">${doc.control_number || '—'}</td>
             <td style="text-align: center;"><span class="badge ${doc.status}">${doc.status}</span></td>
+            <td class="col-meta" style="font-size: 0.75rem; text-align: center;">${createdDate}</td>
             <td class="col-meta" style="font-size: 0.75rem; text-align: center;">${updatedDate}</td>
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td class="col-meta">
@@ -1329,7 +1333,7 @@ async function renderClientDashboard(userId, isSilent = false) {
         </tr>
     `}).join('') : `
         <tr>
-            <td colspan="8" style="text-align:center; padding: 4rem; color: var(--gray-400);">
+            <td colspan="9" style="text-align:center; padding: 4rem; color: var(--gray-400);">
                 <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem;">description</span>
                 ${currentSearchTerm ? 'No documents found matching your search.' : 'You have no documents in this tab.'}
             </td>
