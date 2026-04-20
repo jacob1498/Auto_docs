@@ -27,6 +27,8 @@ let currentAdminPage = 0;
 let currentSerialStart = 1;
 let currentClientPage = 0;
 let currentSearchTerm = '';
+let currentStartDate = '';
+let currentEndDate = '';
 let currentSidebarView = localStorage.getItem('doctrack-sidebar-view') || 'documents';
 const PAGE_SIZE = 10;
 let monthlyGroupsCache = {}; // Store report data for export
@@ -38,6 +40,9 @@ let lastClientTableHTML = "";
 // Helper to synchronize search UI and state
 function clearSearchUI() {
     currentSearchTerm = '';
+    currentStartDate = '';
+    currentEndDate = '';
+    document.querySelectorAll('.dashboard-date-filter').forEach(input => input.value = '');
     document.querySelectorAll('.dashboard-search').forEach(input => input.value = '');
     document.querySelectorAll('.clear-search-btn').forEach(btn => btn.classList.add('hidden'));
     document.getElementById('no-results')?.classList.add('hidden');
@@ -307,6 +312,22 @@ document.addEventListener('click', async (e) => {
                 await renderClientDashboard(session.user.id);
             }
         }
+    }
+});
+
+document.addEventListener('change', async (e) => {
+    if (!e.target.classList.contains('dashboard-date-filter')) return;
+    
+    if (e.target.id.includes('start')) currentStartDate = e.target.value;
+    if (e.target.id.includes('end')) currentEndDate = e.target.value;
+
+    // Clear aging filter if custom range is set to avoid logic conflicts
+    if (currentStartDate || currentEndDate) currentAdminAgingFilter = null;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        if (currentUserRole === 'admin') await renderAdminDashboard();
+        else await renderClientDashboard(session.user.id);
     }
 });
 
@@ -1299,24 +1320,20 @@ async function renderAdminDashboard(isSilent = false) {
         if (currentAdminAgingFilter === '0-3 Days') {
             const limit = new Date();
             limit.setDate(limit.getDate() - 3);
-            const limitStr = limit.toISOString().split('T')[0];
-            query = query.gte('doc_date', limitStr);
+            query = query.gte('doc_date', limit.toISOString().split('T')[0]);
         } else if (currentAdminAgingFilter === '4-7 Days') {
-            const start = new Date();
-            start.setDate(start.getDate() - 3);
-            const end = new Date();
-            end.setDate(end.getDate() - 7);
-            query = query.lt('doc_date', start.toISOString().split('T')[0]).gte('doc_date', end.toISOString().split('T')[0]);
+            const limit3 = new Date(); limit3.setDate(limit3.getDate() - 3);
+            const limit7 = new Date(); limit7.setDate(limit7.getDate() - 7);
+            query = query.lt('doc_date', limit3.toISOString().split('T')[0])
+                         .gte('doc_date', limit7.toISOString().split('T')[0]);
         } else if (currentAdminAgingFilter === '8-11 Days') {
-            const limit = new Date();
-            limit.setDate(limit.getDate() - 7);
-            const floor = new Date();
-            floor.setDate(floor.getDate() - 11);
-            query = query.lt('doc_date', limit.toISOString().split('T')[0]).gte('doc_date', floor.toISOString().split('T')[0]);
+            const limit7 = new Date(); limit7.setDate(limit7.getDate() - 7);
+            const limit11 = new Date(); limit11.setDate(limit11.getDate() - 11);
+            query = query.lt('doc_date', limit7.toISOString().split('T')[0])
+                         .gte('doc_date', limit11.toISOString().split('T')[0]);
         } else if (currentAdminAgingFilter === '12+ Days') {
-            const limit = new Date();
-            limit.setDate(limit.getDate() - 11);
-            query = query.lt('doc_date', limit.toISOString().split('T')[0]);
+            const limit11 = new Date(); limit11.setDate(limit11.getDate() - 11);
+            query = query.lt('doc_date', limit11.toISOString().split('T')[0]);
         }
     }
 
@@ -1324,6 +1341,9 @@ async function renderAdminDashboard(isSilent = false) {
     if (currentSearchTerm) {
         query = query.or(`title.ilike.%${currentSearchTerm}%,owner_name.ilike.%${currentSearchTerm}%,control_number.ilike.%${currentSearchTerm}%`);
     }
+
+    if (currentStartDate) query = query.gte('doc_date', currentStartDate);
+    if (currentEndDate) query = query.lte('doc_date', currentEndDate);
 
     const from = currentAdminPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -1354,8 +1374,9 @@ async function renderAdminDashboard(isSilent = false) {
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
         const filterLabel = currentAdminAgingFilter ? ` | Aging: ${currentAdminAgingFilter}` : '';
+        const dateLabel = (currentStartDate || currentEndDate) ? ` | Date: ${currentStartDate || 'Any'} to ${currentEndDate || 'Today'}` : '';
         const searchLabel = currentSearchTerm ? ` | Search: "${currentSearchTerm}"` : '';
-        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${searchLabel} | Total: ${count || 0}`;
+        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${dateLabel}${searchLabel} | Total: ${count || 0}`;
     }
 
     const hasDocs = docs && docs.length > 0;
@@ -1367,7 +1388,10 @@ async function renderAdminDashboard(isSilent = false) {
         const aging = calculateAging(doc.doc_date || doc.created_at);
         const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
-        const agingClass = aging > 5 ? 'Cancelled' : 'Active';
+        
+        // Color-code aging badge: 0-3 (Green), 4-7 (Blue), 8-11 (Orange), 12+ (Red)
+        const agingClass = aging >= 12 ? 'Cancelled' : (aging >= 8 ? 'Revised' : (aging >= 4 ? 'Submitted' : 'Completed'));
+        
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
         
         return `
@@ -1472,6 +1496,9 @@ async function renderClientDashboard(userId, isSilent = false) {
         query = query.or(`title.ilike.%${currentSearchTerm}%,owner_name.ilike.%${currentSearchTerm}%,control_number.ilike.%${currentSearchTerm}%`);
     }
 
+    if (currentStartDate) query = query.gte('doc_date', currentStartDate);
+    if (currentEndDate) query = query.lte('doc_date', currentEndDate);
+
     const from = currentClientPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
@@ -1497,7 +1524,7 @@ async function renderClientDashboard(userId, isSilent = false) {
         const aging = calculateAging(doc.doc_date || doc.created_at);
         const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
-        const agingClass = aging > 5 ? 'Cancelled' : 'Active';
+        const agingClass = aging >= 12 ? 'Cancelled' : (aging >= 8 ? 'Revised' : (aging >= 4 ? 'Submitted' : 'Completed'));
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
 
         return `
@@ -1647,6 +1674,9 @@ window.returnToClient = async (id) => {
 
 window.filterByAging = async (label) => {
     currentAdminAgingFilter = label;
+    currentStartDate = '';
+    currentEndDate = '';
+    document.querySelectorAll('.dashboard-date-filter').forEach(input => input.value = '');
     currentAdminTab = 'all'; // Show all in-progress monitoring across all categories
     currentAdminPage = 0;
     await switchSidebarView('documents');
@@ -1654,7 +1684,10 @@ window.filterByAging = async (label) => {
 
 window.filterByOwnerAging = async (ownerName) => {
     currentAdminAgingFilter = null;
-    currentAdminTab = 'submitted';
+    currentStartDate = '';
+    currentEndDate = '';
+    document.querySelectorAll('.dashboard-date-filter').forEach(input => input.value = '');
+    currentAdminTab = 'all';
     currentAdminPage = 0;
     currentSearchTerm = ownerName;
 

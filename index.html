@@ -307,12 +307,20 @@
                             <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
                             <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
                         </div>
-                        <div class="search-box">
-                            <span class="material-symbols-outlined">search</span>
-                            <input type="text" class="dashboard-search" placeholder="Search documents...">
-                            <button class="clear-search-btn clear-btn hidden">
-                                <span class="material-symbols-outlined">close</span>
-                            </button>
+                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                            <div class="date-filter-group" style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.4rem 0.75rem; border-radius: 0.6rem; border: 1px solid var(--gray-200); height: 42px;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--gray-400);">calendar_month</span>
+                                <input type="date" id="admin-start-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
+                                <span style="color: var(--gray-300);">→</span>
+                                <input type="date" id="admin-end-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
+                            </div>
+                            <div class="search-box" style="margin: 0;">
+                                <span class="material-symbols-outlined">search</span>
+                                <input type="text" class="dashboard-search" placeholder="Search documents...">
+                                <button class="clear-search-btn clear-btn hidden">
+                                    <span class="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="stats-bar">
@@ -351,12 +359,20 @@
                         <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
                         <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
                     </div>
-                    <div class="search-box">
-                        <span class="material-symbols-outlined">search</span>
-                        <input type="text" class="dashboard-search" placeholder="Search documents...">
-                        <button class="clear-search-btn clear-btn hidden">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div class="date-filter-group" style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.4rem 0.75rem; border-radius: 0.6rem; border: 1px solid var(--gray-200); height: 42px;">
+                            <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--gray-400);">calendar_month</span>
+                            <input type="date" id="client-start-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
+                            <span style="color: var(--gray-300);">→</span>
+                            <input type="date" id="client-end-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
+                        </div>
+                        <div class="search-box" style="margin: 0;">
+                            <span class="material-symbols-outlined">search</span>
+                            <input type="text" class="dashboard-search" placeholder="Search documents...">
+                            <button class="clear-search-btn clear-btn hidden">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
