@@ -368,6 +368,13 @@ tr:hover {
     z-index: 10;
 }
 
+.serial-node.empty {
+    background: var(--gray-50);
+    color: var(--gray-400);
+    border: 1px solid var(--gray-200);
+    font-weight: 400;
+}
+
 /* Profile Header & Dropdown */
 .profile-menu-container {
     position: relative;

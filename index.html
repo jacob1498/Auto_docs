@@ -128,8 +128,9 @@
                     </div>
 
                     <div id="admin-serial-monitor-section" class="hidden" style="margin-top: 3rem;">
-                        <h2 style="text-align: left; margin-bottom: 0.5rem;">IAAF Serial Status Map (0001-9999)</h2>
+                        <h2 style="text-align: left; margin-bottom: 0.5rem;">IAAF Serial Status Map (0001-3000)</h2>
                         <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1.5rem;">Visual distribution of control numbers currently in the system.</p>
+                        <div id="serial-range-controls" class="tabs" style="margin-bottom: 1.5rem; flex-wrap: wrap; background: none; border: none; padding: 0; gap: 0.5rem;"></div>
                         <div id="serial-status-grid" class="serial-status-grid">
                             <!-- Serial nodes injected by JS -->
                         </div>
@@ -139,6 +140,23 @@
                         <h2 style="text-align: left; margin-bottom: 1.5rem;">Aging Distribution (Pending Docs)</h2>
                         <div class="grid-list" id="aging-brackets-container" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                             <!-- Aging brackets will be injected here -->
+                        </div>
+
+                        <div class="table-container" style="margin-top: 2rem;">
+                            <table id="client-aging-table">
+                                <thead>
+                                    <tr>
+                                        <th>Owner Name</th>
+                                        <th style="text-align: center;">0-3 Days</th>
+                                        <th style="text-align: center;">4-7 Days</th>
+                                        <th style="text-align: center;">8+ Days</th>
+                                        <th style="text-align: center;">Total Pending</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="client-aging-tbody">
+                                    <!-- Data injected by JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 

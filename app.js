@@ -24,6 +24,7 @@ let currentClientTab = 'active';
 let currentAdminTab = 'all';
 let currentAdminAgingFilter = null;
 let currentAdminPage = 0;
+let currentSerialStart = 1;
 let currentClientPage = 0;
 let currentSearchTerm = '';
 let currentSidebarView = 'documents'; // Default view
@@ -709,12 +710,17 @@ async function updateStatsDashboard() {
         // Calculate Aging Brackets for Submitted docs
         const pendingDocs = docs.filter(d => d.status === 'Submitted');
         const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8+ Days': 0 };
+        const clientAging = {};
         
         pendingDocs.forEach(d => {
             const age = calculateAging(d.created_at);
-            if (age <= 3) brackets['0-3 Days']++;
-            else if (age <= 7) brackets['4-7 Days']++;
-            else brackets['8+ Days']++;
+            const owner = d.owner_name || 'Unassigned';
+            if (!clientAging[owner]) clientAging[owner] = { 'low': 0, 'mid': 0, 'high': 0, 'total': 0 };
+
+            if (age <= 3) { brackets['0-3 Days']++; clientAging[owner].low++; }
+            else if (age <= 7) { brackets['4-7 Days']++; clientAging[owner].mid++; }
+            else { brackets['8+ Days']++; clientAging[owner].high++; }
+            clientAging[owner].total++;
         });
 
         const agingContainer = document.getElementById('aging-brackets-container');
@@ -730,24 +736,59 @@ async function updateStatsDashboard() {
             </div>
         `).join('');
 
+        const clientAgingTbody = document.getElementById('client-aging-tbody');
+        if (clientAgingTbody) {
+            clientAgingTbody.innerHTML = Object.entries(clientAging).map(([name, data]) => `
+                <tr onclick="filterByOwnerAging('${name}')" style="cursor: pointer;">
+                    <td style="font-weight: 500;">${name}</td>
+                    <td style="text-align: center;">${data.low}</td>
+                    <td style="text-align: center;">${data.mid > 0 ? `<span class="badge Revised" style="font-size: 0.65rem;">${data.mid}</span>` : '0'}</td>
+                    <td style="text-align: center;">${data.high > 0 ? `<span class="badge Cancelled" style="font-size: 0.65rem;">${data.high}</span>` : '0'}</td>
+                    <td style="text-align: center; font-weight: 700;">${data.total}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--gray-400);">No pending documents to analyze.</td></tr>';
+        }
+
         // Render Serial Status Grid (IAAF only)
+        const rangeControls = document.getElementById('serial-range-controls');
         const serialGrid = document.getElementById('serial-status-grid');
-        const iaafDocs = docs.filter(d => d.category === 'IAAF' && d.control_number);
+        const iaafDocs = docs.filter(d => d.category === 'IAAF' && d.control_number && d.status !== 'Cancelled');
         
-        // Sort by the 4-digit serial suffix
-        const sortedSerials = iaafDocs.sort((a, b) => {
-            const numA = parseInt(a.control_number.split('-').pop());
-            const numB = parseInt(b.control_number.split('-').pop());
-            return numA - numB;
+        // Create a map of existing serials for quick lookup
+        const serialMap = {};
+        iaafDocs.forEach(d => {
+            const num = parseInt(d.control_number.split('-').pop());
+            if (!isNaN(num)) serialMap[num] = d;
         });
 
-        serialGrid.innerHTML = sortedSerials.map(doc => {
-            const serial = doc.control_number.split('-').pop();
-            return `<div class="serial-node ${doc.status}" 
-                         title="Serial: ${serial}\nStatus: ${doc.status}\nTitle: ${doc.title}">
-                        ${serial}
-                    </div>`;
-        }).join('') || '<p style="grid-column: 1/-1; color: var(--gray-400); text-align: center; padding: 1rem;">No serial numbers recorded yet.</p>';
+        // Render Range Buttons (1-100, 101-200, ... up to 3000)
+        const ranges = [];
+        for (let i = 1; i <= 3000; i += 100) {
+            ranges.push({ start: i, end: i + 99 });
+        }
+
+        if (rangeControls) {
+            rangeControls.innerHTML = ranges.map(r => `
+                <button class="tab-btn ${currentSerialStart === r.start ? 'active' : ''}" 
+                        style="font-size: 0.75rem; padding: 0.4rem 0.8rem;"
+                        onclick="setSerialRange(${r.start})">
+                    ${r.start}-${r.end}
+                </button>
+            `).join('');
+        }
+
+        // Render the 100 slots for the current range
+        let gridHTML = '';
+        for (let i = currentSerialStart; i < currentSerialStart + 100 && i <= 3000; i++) {
+            const doc = serialMap[i];
+            const displayNum = i.toString().padStart(4, '0');
+            if (doc) {
+                gridHTML += `<div class="serial-node ${doc.status}" title="Serial: ${displayNum}\nStatus: ${doc.status}\nTitle: ${doc.title}">${displayNum}</div>`;
+            } else {
+                gridHTML += `<div class="serial-node empty" title="Serial: ${displayNum}\nStatus: Available">${displayNum}</div>`;
+            }
+        }
+        serialGrid.innerHTML = gridHTML;
 
         const matrixBody = document.querySelector('#owner-status-matrix tbody');
         
@@ -1455,4 +1496,26 @@ window.filterByAging = async (label) => {
     currentAdminTab = 'submitted'; // Force tab to submitted as aging is for pending docs
     currentAdminPage = 0;
     await switchSidebarView('documents');
+};
+
+window.filterByOwnerAging = async (ownerName) => {
+    currentAdminAgingFilter = null;
+    currentAdminTab = 'submitted';
+    currentAdminPage = 0;
+    currentSearchTerm = ownerName;
+
+    // Sync Search UI across the application
+    document.querySelectorAll('.dashboard-search').forEach(input => {
+        input.value = ownerName;
+    });
+    document.querySelectorAll('.clear-search-btn').forEach(btn => {
+        btn.classList.remove('hidden');
+    });
+
+    await switchSidebarView('documents');
+};
+
+window.setSerialRange = (start) => {
+    currentSerialStart = start;
+    updateStatsDashboard();
 };
