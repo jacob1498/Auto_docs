@@ -1191,5 +1191,11 @@ body[data-theme="blue"] {
 body[data-theme="red"] {
     --primary: #dc2626;
     --primary-dark: #991b1b;
+
+.serial-node.Completed { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.serial-node.Submitted { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.serial-node.Cancelled { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.serial-node.Revised { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+.serial-node.Active { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
     --pending: #dc2626;
 }

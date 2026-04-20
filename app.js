@@ -680,7 +680,7 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 async function updateStatsDashboard() {
-    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at, control_number, category');
+    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at, doc_date, control_number, category');
     if (error) return;
 
     // Calculate high-level stats
@@ -709,22 +709,28 @@ async function updateStatsDashboard() {
 
         // Calculate Aging Brackets for Submitted docs
         const pendingDocs = docs.filter(d => d.status === 'Submitted');
-        const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8+ Days': 0 };
+        const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8-11 Days': 0, '12+ Days': 0 };
         const clientAging = {};
         
         pendingDocs.forEach(d => {
-            const age = calculateAging(d.created_at);
+            const age = calculateAging(d.doc_date || d.created_at);
             const owner = d.owner_name || 'Unassigned';
             if (!clientAging[owner]) clientAging[owner] = { 'low': 0, 'mid': 0, 'high': 0, 'total': 0 };
 
             if (age <= 3) { brackets['0-3 Days']++; clientAging[owner].low++; }
             else if (age <= 7) { brackets['4-7 Days']++; clientAging[owner].mid++; }
-            else { brackets['8+ Days']++; clientAging[owner].high++; }
+            else if (age <= 11) { brackets['8-11 Days']++; clientAging[owner].high++; }
+            else { brackets['12+ Days']++; clientAging[owner].high++; }
             clientAging[owner].total++;
         });
 
         const agingContainer = document.getElementById('aging-brackets-container');
-        const colors = { '0-3 Days': 'var(--success)', '4-7 Days': 'var(--warning)', '8+ Days': 'var(--danger)' };
+        const colors = { 
+            '0-3 Days': 'var(--success)', 
+            '4-7 Days': 'var(--info)', 
+            '8-11 Days': 'var(--warning)', 
+            '12+ Days': 'var(--danger)' 
+        };
         
         agingContainer.innerHTML = Object.entries(brackets).map(([label, count]) => `
             <div class="aging-bracket-card" style="border-left-color: ${colors[label]}" onclick="filterByAging('${label}')">
@@ -752,7 +758,7 @@ async function updateStatsDashboard() {
         // Render Serial Status Grid (IAAF only)
         const rangeControls = document.getElementById('serial-range-controls');
         const serialGrid = document.getElementById('serial-status-grid');
-        const iaafDocs = docs.filter(d => d.category === 'IAAF' && d.control_number && d.status !== 'Cancelled');
+        const iaafDocs = docs.filter(d => d.category === 'IAAF' && d.control_number);
         
         // Create a map of existing serials for quick lookup
         const serialMap = {};
@@ -1101,10 +1107,10 @@ async function showApp(user) {
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     autoRefreshInterval = setInterval(async () => {
         if (currentSidebarView === 'documents') {
-            if (currentUserRole === 'admin') await renderAdminDashboard(true);
-            else await renderClientDashboard(user.id, true);
+            if (currentUserRole === 'admin') renderAdminDashboard(true);
+            else renderClientDashboard(user.id, true);
         } else if (currentSidebarView === 'dashboard') {
-            await updateStatsDashboard();
+            updateStatsDashboard();
         }
     }, 2000);
 }
@@ -1118,11 +1124,13 @@ function showAuth() {
     signupView.classList.add('hidden');
 }
 
-function calculateAging(createdAt) {
-    const created = new Date(createdAt);
+function calculateAging(dateInput) {
+    if (!dateInput) return 0;
+    const created = new Date(dateInput);
     const now = new Date();
-    const diffTime = Math.abs(now - created);
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffTime = now - created;
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return days < 0 ? 0 : days;
 }
 
 async function renderAdminDashboard(isSilent = false) {
@@ -1175,11 +1183,17 @@ async function renderAdminDashboard(isSilent = false) {
             start.setDate(start.getDate() - 3);
             const end = new Date();
             end.setDate(end.getDate() - 7);
-            query = query.lt('created_at', start.toISOString()).gte('created_at', end.toISOString());
-        } else if (currentAdminAgingFilter === '8+ Days') {
+            query = query.lt('doc_date', start.toISOString().split('T')[0]).gte('doc_date', end.toISOString().split('T')[0]);
+        } else if (currentAdminAgingFilter === '8-11 Days') {
             const limit = new Date();
             limit.setDate(limit.getDate() - 7);
-            query = query.lt('created_at', limit.toISOString());
+            const floor = new Date();
+            floor.setDate(floor.getDate() - 11);
+            query = query.lt('doc_date', limit.toISOString().split('T')[0]).gte('doc_date', floor.toISOString().split('T')[0]);
+        } else if (currentAdminAgingFilter === '12+ Days') {
+            const limit = new Date();
+            limit.setDate(limit.getDate() - 11);
+            query = query.lt('doc_date', limit.toISOString().split('T')[0]);
         }
     }
 
@@ -1225,8 +1239,8 @@ async function renderAdminDashboard(isSilent = false) {
     document.getElementById('no-results')?.classList.add('hidden');
 
     tbody.innerHTML = hasDocs ? docs.map(doc => {
-        const aging = calculateAging(doc.created_at);
-        const createdDate = new Date(doc.created_at).toLocaleString();
+        const aging = calculateAging(doc.doc_date || doc.created_at);
+        const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
@@ -1345,8 +1359,8 @@ async function renderClientDashboard(userId, isSilent = false) {
     document.getElementById('no-results')?.classList.add('hidden');
 
     container.innerHTML = hasDocs ? docs.map(doc => {
-        const aging = calculateAging(doc.created_at);
-        const createdDate = new Date(doc.created_at).toLocaleString();
+        const aging = calculateAging(doc.doc_date || doc.created_at);
+        const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging > 5 ? 'Cancelled' : 'Active';
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
