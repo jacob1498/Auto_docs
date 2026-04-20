@@ -20,14 +20,14 @@ const signupForm = document.getElementById('signup-form');
 const userDisplay = document.getElementById('user-display');
 let currentUserRole = null;
 let editingId = null;
-let currentClientTab = 'active';
-let currentAdminTab = 'all';
+let currentClientTab = localStorage.getItem('doctrack-client-tab') || 'active';
+let currentAdminTab = localStorage.getItem('doctrack-admin-tab') || 'all';
 let currentAdminAgingFilter = null;
 let currentAdminPage = 0;
 let currentSerialStart = 1;
 let currentClientPage = 0;
 let currentSearchTerm = '';
-let currentSidebarView = 'documents'; // Default view
+let currentSidebarView = localStorage.getItem('doctrack-sidebar-view') || 'documents';
 const PAGE_SIZE = 10;
 let monthlyGroupsCache = {}; // Store report data for export
 let realtimeSubscription = null;
@@ -48,6 +48,7 @@ function clearSearchUI() {
 // Tab Switching Logic
 window.switchClientTab = async (tab) => {
     currentClientTab = tab;
+    localStorage.setItem('doctrack-client-tab', tab);
     currentClientPage = 0; // Reset to first page
     clearSearchUI(); // Ensure fresh state on tab change
 
@@ -57,6 +58,7 @@ window.switchClientTab = async (tab) => {
 
 window.switchAdminTab = async (tab) => {
     currentAdminTab = tab;
+    localStorage.setItem('doctrack-admin-tab', tab);
     currentAdminPage = 0; // Reset to first page
     currentAdminAgingFilter = null; // Clear aging filter when manually switching tabs
     clearSearchUI(); // Ensure fresh state on tab change
@@ -68,6 +70,7 @@ window.switchAdminTab = async (tab) => {
 // Sidebar Navigation Switching
 async function switchSidebarView(viewName) {
     currentSidebarView = viewName;
+    localStorage.setItem('doctrack-sidebar-view', viewName);
     document.getElementById('no-results')?.classList.add('hidden');
     if (viewName === 'dashboard') clearSearchUI();
     
@@ -139,7 +142,78 @@ document.addEventListener('click', () => {
     document.getElementById('profile-dropdown')?.classList.add('hidden');
 });
 
+// Sidebar Collapse Toggle
+const toggleSidebar = () => {
+    const sidebar = document.getElementById('sidebar');
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem('doctrack-sidebar-collapsed', isCollapsed);
+};
+
+document.getElementById('desktop-sidebar-toggle')?.addEventListener('click', toggleSidebar);
+
+// Initialize sidebar state
+if (localStorage.getItem('doctrack-sidebar-collapsed') === 'true') {
+    document.getElementById('sidebar')?.classList.add('collapsed');
+}
+
 document.getElementById('profile-form')?.addEventListener('submit', (e) => { e.preventDefault(); updateProfile(); });
+document.getElementById('password-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const newPassword = document.getElementById('new-password').value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Updating...';
+
+    try {
+        const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        showToast("Password updated successfully!");
+        e.target.reset();
+    } catch (err) {
+        showToast("Error updating password: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">key</span> Update Password';
+    }
+});
+
+document.getElementById('avatar-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const placeholder = document.getElementById('profile-avatar-placeholder');
+    const originalContent = placeholder.innerHTML;
+    placeholder.innerHTML = '<div class="spinner spinner-dark"></div>';
+
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabaseClient.storage
+            .from('avatars')
+            .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+
+        const { error: updateError } = await supabaseClient
+            .from('profiles')
+            .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+            .eq('id', user.id);
+
+        if (updateError) throw updateError;
+
+        showToast("Avatar updated successfully!");
+        await renderProfileView();
+    } catch (err) {
+        showToast("Upload failed: " + err.message, "error");
+        placeholder.innerHTML = originalContent;
+    }
+});
 
 document.getElementById('export-reports-btn')?.addEventListener('click', () => {
     document.getElementById('export-modal-overlay').classList.remove('hidden');
@@ -381,7 +455,6 @@ addDocForm?.addEventListener('submit', async (e) => {
     
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-        alert("User session not found. Please log in again.");
         return;
     }
 
@@ -502,8 +575,7 @@ addDocForm?.addEventListener('submit', async (e) => {
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showApp(user);
     } catch (err) {
-        alert(err.message);
-    } finally {
+        showToast(err.message, "error");
         btn.disabled = false;
         btn.innerText = "Create Document";
     }
@@ -527,10 +599,9 @@ window.editDocument = async (id) => {
         .single();
     
     if (error) {
-        alert("Error fetching document details: " + error.message);
+        showToast("Error fetching document details: " + error.message, "error");
         return;
     }
-
     document.getElementById('doc-title-input').value = doc.title;
     document.getElementById('doc-category-select').value = doc.category;
     document.getElementById('doc-owner-name').value = doc.owner_name;
@@ -588,20 +659,28 @@ document.getElementById('confirm-delete-btn')?.addEventListener('click', async (
         const { data: { user } } = await supabaseClient.auth.getUser();
         showApp(user);
     } catch (err) {
-        alert("Error deleting document: " + err.message);
+        showToast("Error deleting document: " + err.message, "error");
     } finally {
         btn.disabled = false;
-        btn.innerText = "Delete";
         documentIdToDelete = null;
     }
 });
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    const toastMsg = document.getElementById('toast-message');
+    const toastMsg = toast.querySelector('.toast-message') || toast;
+    const toastIcon = toast.querySelector('.material-symbols-outlined');
+
     toastMsg.innerText = message;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
+    toastIcon.innerText = type === 'success' ? 'check_circle' : 'error';
+    
+    toast.classList.remove('hidden', 'success', 'error');
+    toast.classList.add(type);
+    void toast.offsetHeight; 
+    toast.style.animation = null;
+
+    if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    window.toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
 // Close sidebar when clicking outside on mobile
@@ -643,7 +722,7 @@ loginForm.addEventListener('submit', async (e) => {
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
     } catch (err) {
-        alert(err.message);
+        showToast(err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerText = "Sign In";
@@ -685,9 +764,9 @@ signupForm.addEventListener('submit', async (e) => {
         }
     } catch (err) {
         if (err.message.includes("rate limit")) {
-            alert("Supabase Limit Reached: " + err.message + "\n\nTip: Go to your Supabase Dashboard > Authentication > Providers and disable 'Confirm Email' to bypass email rate limits during testing.");
+            showToast("Supabase Limit Reached. Please try again later.", "error");
         } else {
-            alert("Sign Up Error: " + err.message);
+            showToast("Sign Up Error: " + err.message, "error");
         }
         console.error("Detailed Auth Error:", err);
     } finally {
@@ -943,15 +1022,34 @@ async function renderProfileView() {
 
     const { data: profile } = await supabaseClient
         .from('profiles')
-        .select('full_name')
+        .select('full_name, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
     const fullName = profile?.full_name || '';
+    const avatarUrl = profile?.avatar_url || '';
+
     document.getElementById('profile-full-name').value = fullName;
     document.getElementById('profile-name-display').innerText = fullName || 'User';
     document.getElementById('header-user-name').innerText = fullName || 'User';
     document.getElementById('header-user-role').innerText = role;
+
+    const profileImg = document.getElementById('profile-avatar-img');
+    const profilePh = document.getElementById('profile-avatar-placeholder');
+    const headerImg = document.getElementById('header-avatar-img');
+    const headerPh = document.getElementById('header-avatar-placeholder');
+
+    if (avatarUrl) {
+        if (profileImg) { profileImg.src = avatarUrl; profileImg.style.display = 'block'; }
+        if (profilePh) profilePh.style.display = 'none';
+        if (headerImg) { headerImg.src = avatarUrl; headerImg.style.display = 'block'; }
+        if (headerPh) headerPh.style.display = 'none';
+    } else {
+        if (profileImg) profileImg.style.display = 'none';
+        if (profilePh) profilePh.style.display = 'flex';
+        if (headerImg) headerImg.style.display = 'none';
+        if (headerPh) headerPh.style.display = 'flex';
+    }
 }
 
 async function updateProfile() {
@@ -979,7 +1077,7 @@ async function updateProfile() {
         document.getElementById('header-user-name').innerText = fullName || 'User';
         showToast("Profile updated successfully!");
     } catch (err) {
-        alert("Update failed: " + err.message);
+        showToast("Update failed: " + err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined">save</span> Save Changes';
@@ -1093,8 +1191,6 @@ async function showApp(user) {
 
     // Update header with initial user info from metadata
     const role = user.user_metadata?.role || 'user';
-    document.getElementById('header-user-name').innerText = user.email.split('@')[0];
-    document.getElementById('header-user-role').innerText = role;
 
     // Only fetch role if we don't have it cached
     if (!currentUserRole) {
@@ -1113,6 +1209,9 @@ async function showApp(user) {
             console.warn("Profile table fetch failed, falling back to metadata.", err);
         }
     }
+
+    // Fetch and display profile info (name, avatar) in header
+    await renderProfileView();
 
     // Default to the documents view on login
     await switchSidebarView('documents');
@@ -1200,7 +1299,8 @@ async function renderAdminDashboard(isSilent = false) {
         if (currentAdminAgingFilter === '0-3 Days') {
             const limit = new Date();
             limit.setDate(limit.getDate() - 3);
-            query = query.gte('created_at', limit.toISOString());
+            const limitStr = limit.toISOString().split('T')[0];
+            query = query.gte('doc_date', limitStr);
         } else if (currentAdminAgingFilter === '4-7 Days') {
             const start = new Date();
             start.setDate(start.getDate() - 3);
@@ -1515,7 +1615,7 @@ window.updateStatus = async (id, status, customMsg = null) => {
         }
         return true; // Return success status
     } catch (err) {
-        alert("Update failed: " + err.message);
+        showToast("Update failed: " + err.message, "error");
         return false;
     }
 };
