@@ -1055,8 +1055,12 @@ async function renderReportsView() {
         }).join('');
 }
 
-async function renderProfileView() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+async function renderProfileView(passedUser = null) {
+    let user = passedUser;
+    if (!user) {
+        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+        user = authUser;
+    }
     if (!user) return;
 
     const role = currentUserRole || user.user_metadata?.role;
@@ -1070,7 +1074,7 @@ async function renderProfileView() {
         .eq('id', user.id)
         .maybeSingle();
 
-    const fullName = profile?.full_name || user.email.split('@')[0];
+    const fullName = profile?.full_name || user.email?.split('@')[0] || 'Account';
     const avatarUrl = profile?.avatar_url || '';
 
     document.getElementById('profile-full-name').value = fullName;
@@ -1236,6 +1240,13 @@ async function showApp(user) {
 
     // Update header with initial user info from metadata
     const role = user.user_metadata?.role || 'user';
+    const accountName = user.email?.split('@')[0] || 'Account';
+
+    // Immediate UI update to prevent "User" showing during database load
+    document.getElementById('header-user-name').innerText = accountName;
+    document.getElementById('header-user-role').innerText = role;
+    if (document.getElementById('profile-name-display')) document.getElementById('profile-name-display').innerText = accountName;
+    if (document.getElementById('profile-role-display')) document.getElementById('profile-role-display').innerText = role;
 
     // Only fetch role if we don't have it cached
     if (!currentUserRole) {
@@ -1249,6 +1260,7 @@ async function showApp(user) {
             
             if (profile && !error) {
                 currentUserRole = profile.role;
+                document.getElementById('header-user-role').innerText = currentUserRole;
             }
         } catch (err) {
             console.warn("Profile table fetch failed, falling back to metadata.", err);
@@ -1256,7 +1268,7 @@ async function showApp(user) {
     }
 
     // Fetch and display profile info (name, avatar) in header
-    await renderProfileView();
+    await renderProfileView(user);
 
     // Default to the documents view on login
     await switchSidebarView('documents');
@@ -1299,7 +1311,8 @@ async function renderAdminDashboard(isSilent = false) {
     document.getElementById('client-view').classList.add('hidden');
     
     const topLoader = document.getElementById('top-loader');
-    if (isSilent && topLoader) topLoader.classList.add('loading');
+    // Only show loader if it's not a background silent refresh to prevent "dancing"
+    if (!isSilent && topLoader) topLoader.classList.add('loading');
     
     const tbody = document.querySelector('#admin-doc-table tbody');
     // Only show loading state if not a silent background refresh
@@ -1472,7 +1485,8 @@ async function renderClientDashboard(userId, isSilent = false) {
 
     const container = document.getElementById('client-doc-list');
     const topLoader = document.getElementById('top-loader');
-    if (isSilent && topLoader) topLoader.classList.add('loading');
+    // Only show loader if it's not a background silent refresh to prevent "dancing"
+    if (!isSilent && topLoader) topLoader.classList.add('loading');
 
     // Only show loading state if not a silent background refresh
     if (!isSilent) {
