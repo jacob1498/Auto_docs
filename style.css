@@ -1271,12 +1271,14 @@ body[data-theme="red"] {
 .date-filter-group {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.2rem;
     background: white;
-    padding: 0.4rem 0.75rem;
+    padding: 0 0.5rem;
     border-radius: 0.6rem;
     border: 1px solid var(--gray-200);
     height: 42px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .date-filter-group .material-symbols-outlined {
@@ -1288,11 +1290,18 @@ body[data-theme="red"] {
     border: none !important;
     background: none !important;
     padding: 0 !important;
-    font-size: 0.75rem; /* Slightly smaller font to fit better */
-    width: 90px; /* Reduced width */
+    font-size: 0.75rem;
+    width: 82px;
     color: var(--gray-600);
     cursor: pointer;
     box-shadow: none !important;
+    text-align: center;
+}
+
+.dashboard-date-filter::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: opacity(0.4);
+    margin-left: -2px;
 }
 .serial-node.Revised { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
 .serial-node.Active { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
