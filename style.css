@@ -75,7 +75,10 @@ body {
     box-shadow: var(--shadow);
     width: 100%;
     max-width: 420px;
-    /* Entry animation */
+}
+
+/* Only animate cards in the Auth container to prevent "dancing" on view switches */
+#auth-container .card {
     animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

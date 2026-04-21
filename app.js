@@ -36,6 +36,10 @@ let realtimeSubscription = null;
 let autoRefreshInterval = null;
 let lastAdminTableHTML = "";
 let lastClientTableHTML = "";
+let lastAdminStatsBarHTML = "";
+let lastAgingBracketsHTML = "";
+let lastOwnerMatrixHTML = "";
+let lastClientAgingTableHTML = "";
 
 // Helper to synchronize search UI and state
 function clearSearchUI() {
@@ -48,6 +52,10 @@ function clearSearchUI() {
     document.getElementById('no-results')?.classList.add('hidden');
     lastAdminTableHTML = "";
     lastClientTableHTML = "";
+    lastAdminStatsBarHTML = "";
+    lastAgingBracketsHTML = "";
+    lastOwnerMatrixHTML = "";
+    lastClientAgingTableHTML = "";
 }
 
 // Tab Switching Logic
@@ -849,7 +857,7 @@ async function updateStatsDashboard() {
             '12+ Days': 'var(--danger)' 
         };
         
-        agingContainer.innerHTML = Object.entries(brackets).map(([label, count]) => `
+        const agingHTML = Object.entries(brackets).map(([label, count]) => `
             <div class="aging-bracket-card" style="border-left-color: ${colors[label]}" onclick="filterByAging('${label}')">
                 <span style="font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase;">${label}</span>
                 <div style="display: flex; align-items: baseline; gap: 0.5rem;">
@@ -859,9 +867,14 @@ async function updateStatsDashboard() {
             </div>
         `).join('');
 
+        if (agingHTML !== lastAgingBracketsHTML) {
+            agingContainer.innerHTML = agingHTML;
+            lastAgingBracketsHTML = agingHTML;
+        }
+
         const clientAgingTbody = document.getElementById('client-aging-tbody');
         if (clientAgingTbody) {
-            clientAgingTbody.innerHTML = Object.entries(clientAging).map(([name, data]) => `
+            const clientAgingHTML = Object.entries(clientAging).map(([name, data]) => `
                 <tr onclick="filterByOwnerAging('${name}')" style="cursor: pointer;">
                     <td style="font-weight: 500;">${name}</td>
                     <td style="text-align: center;">${data.low}</td>
@@ -870,6 +883,11 @@ async function updateStatsDashboard() {
                     <td style="text-align: center; font-weight: 700;">${data.total}</td>
                 </tr>
             `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--gray-400);">No pending documents to analyze.</td></tr>';
+
+            if (clientAgingHTML !== lastClientAgingTableHTML) {
+                clientAgingTbody.innerHTML = clientAgingHTML;
+                lastClientAgingTableHTML = clientAgingHTML;
+            }
         }
 
         // Render Serial Status Grid (IAAF only)
@@ -934,7 +952,7 @@ async function updateStatsDashboard() {
             return acc;
         }, {});
 
-        matrixBody.innerHTML = Object.entries(ownerGroups).map(([name, counts]) => `
+        const matrixHTML = Object.entries(ownerGroups).map(([name, counts]) => `
             <tr>
                 <td style="font-weight: 500; color: var(--gray-900);">${name}</td>
                 <td>${counts.Active}</td>
@@ -944,6 +962,11 @@ async function updateStatsDashboard() {
                 <td style="font-weight: 700; color: var(--primary);">${counts.Total}</td>
             </tr>
         `).join('');
+
+        if (matrixHTML !== lastOwnerMatrixHTML) {
+            matrixBody.innerHTML = matrixHTML;
+            lastOwnerMatrixHTML = matrixHTML;
+        }
     } else if (adminSection) {
         adminSection.classList.add('hidden');
         adminSerialSection.classList.add('hidden');
@@ -1047,12 +1070,12 @@ async function renderProfileView() {
         .eq('id', user.id)
         .maybeSingle();
 
-    const fullName = profile?.full_name || '';
+    const fullName = profile?.full_name || user.email.split('@')[0];
     const avatarUrl = profile?.avatar_url || '';
 
     document.getElementById('profile-full-name').value = fullName;
-    document.getElementById('profile-name-display').innerText = fullName || 'User';
-    document.getElementById('header-user-name').innerText = fullName || 'User';
+    document.getElementById('profile-name-display').innerText = fullName;
+    document.getElementById('header-user-name').innerText = fullName;
     document.getElementById('header-user-role').innerText = role;
 
     const profileImg = document.getElementById('profile-avatar-img');
@@ -1094,8 +1117,9 @@ async function updateProfile() {
 
         if (error) throw error;
 
-        document.getElementById('profile-name-display').innerText = fullName || 'User';
-        document.getElementById('header-user-name').innerText = fullName || 'User';
+        const displayName = fullName || user.email.split('@')[0];
+        document.getElementById('profile-name-display').innerText = displayName;
+        document.getElementById('header-user-name').innerText = displayName;
         showToast("Profile updated successfully!");
     } catch (err) {
         showToast("Update failed: " + err.message, "error");
@@ -1376,7 +1400,12 @@ async function renderAdminDashboard(isSilent = false) {
         const filterLabel = currentAdminAgingFilter ? ` | Aging: ${currentAdminAgingFilter}` : '';
         const dateLabel = (currentStartDate || currentEndDate) ? ` | Date: ${currentStartDate || 'Any'} to ${currentEndDate || 'Today'}` : '';
         const searchLabel = currentSearchTerm ? ` | Search: "${currentSearchTerm}"` : '';
-        statsBar.innerHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${dateLabel}${searchLabel} | Total: ${count || 0}`;
+        const statsHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${dateLabel}${searchLabel} | Total: ${count || 0}`;
+        
+        if (statsHTML !== lastAdminStatsBarHTML) {
+            statsBar.innerHTML = statsHTML;
+            lastAdminStatsBarHTML = statsHTML;
+        }
     }
 
     const hasDocs = docs && docs.length > 0;
