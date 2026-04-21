@@ -1268,5 +1268,31 @@ body[data-theme="red"] {
 .serial-node.Completed { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 .serial-node.Submitted { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 .serial-node.Cancelled { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.date-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--gray-200);
+    height: 42px;
+}
+
+.date-filter-group .material-symbols-outlined {
+    font-size: 1.1rem;
+    color: var(--gray-400);
+}
+
+.dashboard-date-filter {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    font-size: 0.8rem;
+    width: 110px;
+    color: var(--gray-600);
+    cursor: pointer;
+    box-shadow: none !important;
+}
 .serial-node.Revised { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
 .serial-node.Active { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }

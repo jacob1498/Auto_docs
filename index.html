@@ -134,14 +134,7 @@
                         </div>
                     </div>
 
-                    <div id="admin-serial-monitor-section" class="hidden" style="margin-top: 3rem;">
-                        <h2 style="text-align: left; margin-bottom: 0.5rem;">IAAF Serial Status Map (0001-3000)</h2>
-                        <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1.5rem;">Visual distribution of control numbers currently in the system.</p>
-                        <div id="serial-range-controls" class="tabs" style="margin-bottom: 1.5rem; flex-wrap: wrap; background: none; border: none; padding: 0; gap: 0.5rem;"></div>
-                        <div id="serial-status-grid" class="serial-status-grid">
-                            <!-- Serial nodes injected by JS -->
-                        </div>
-                    </div>
+
 
                     <div id="admin-aging-section" class="hidden" style="margin-top: 3rem;">
                         <h2 style="text-align: left; margin-bottom: 1.5rem;">Aging Distribution (Pending Docs)</h2>
@@ -167,6 +160,7 @@
                         </div>
                     </div>
 
+
                     <div id="admin-breakdown-section" class="hidden" style="margin-top: 3rem;">
                         <h2 style="text-align: left; margin-bottom: 1.5rem;">Document Status by Owner</h2>
                         <div class="table-container">
@@ -185,6 +179,16 @@
                             </table>
                         </div>
                     </div>
+
+                    <div id="admin-serial-monitor-section" class="hidden" style="margin-top: 3rem;">
+                        <h2 style="text-align: left; margin-bottom: 0.5rem;">IAAF Serial Status Map (0001-3000)</h2>
+                        <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1.5rem;">Visual distribution of control numbers currently in the system.</p>
+                        <div id="serial-range-controls" class="tabs" style="margin-bottom: 1.5rem; flex-wrap: wrap; background: none; border: none; padding: 0; gap: 0.5rem;"></div>
+                        <div id="serial-status-grid" class="serial-status-grid">
+                            <!-- Serial nodes injected by JS -->
+                        </div>
+                    </div>
+
                 </section>
 
                 <!-- Profile View -->
@@ -307,20 +311,18 @@
                             <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
                             <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                            <div class="date-filter-group" style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.4rem 0.75rem; border-radius: 0.6rem; border: 1px solid var(--gray-200); height: 42px;">
-                                <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--gray-400);">calendar_month</span>
-                                <input type="date" id="admin-start-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
-                                <span style="color: var(--gray-300);">→</span>
-                                <input type="date" id="admin-end-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
-                            </div>
-                            <div class="search-box" style="margin: 0;">
-                                <span class="material-symbols-outlined">search</span>
-                                <input type="text" class="dashboard-search" placeholder="Search documents...">
-                                <button class="clear-search-btn clear-btn hidden">
-                                    <span class="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
+                        <div class="date-filter-group">
+                            <span class="material-symbols-outlined">calendar_month</span>
+                            <input type="date" id="admin-start-date" class="dashboard-date-filter">
+                            <span style="color: var(--gray-300);">→</span>
+                            <input type="date" id="admin-end-date" class="dashboard-date-filter">
+                        </div>
+                        <div class="search-box">
+                            <span class="material-symbols-outlined">search</span>
+                            <input type="text" class="dashboard-search" placeholder="Search documents...">
+                            <button class="clear-search-btn clear-btn hidden">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
                         </div>
                     </div>
                     <div class="stats-bar">
@@ -359,20 +361,18 @@
                         <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
                         <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
                     </div>
-                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                        <div class="date-filter-group" style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.4rem 0.75rem; border-radius: 0.6rem; border: 1px solid var(--gray-200); height: 42px;">
-                            <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--gray-400);">calendar_month</span>
-                            <input type="date" id="client-start-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
-                            <span style="color: var(--gray-300);">→</span>
-                            <input type="date" id="client-end-date" class="dashboard-date-filter" style="border: none; background: none; padding: 0; font-size: 0.8rem; width: 110px; color: var(--gray-600); cursor: pointer;">
-                        </div>
-                        <div class="search-box" style="margin: 0;">
-                            <span class="material-symbols-outlined">search</span>
-                            <input type="text" class="dashboard-search" placeholder="Search documents...">
-                            <button class="clear-search-btn clear-btn hidden">
-                                <span class="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
+                    <div class="date-filter-group">
+                        <span class="material-symbols-outlined">calendar_month</span>
+                        <input type="date" id="client-start-date" class="dashboard-date-filter">
+                        <span style="color: var(--gray-300);">→</span>
+                        <input type="date" id="client-end-date" class="dashboard-date-filter">
+                    </div>
+                    <div class="search-box">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" class="dashboard-search" placeholder="Search documents...">
+                        <button class="clear-search-btn clear-btn hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
                 </div>
 
