@@ -366,7 +366,7 @@ thead {
 }
 
 th {
-    padding: 1rem 1.25rem;
+    padding: 0.5rem 0.75rem;
     font-weight: 600;
     color: var(--gray-900);
     text-transform: uppercase;
@@ -378,7 +378,7 @@ th {
 }
 
 td {
-    padding: 1rem 1.25rem;
+    padding: 0.3rem 0.75rem;
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
     color: var(--gray-900);
@@ -658,10 +658,11 @@ tr:hover {
 
 .doc-meta-detail {
     font-size: 0.75rem;
-    color: var(--gray-600);
-    margin-top: 0.25rem;
+    color: var(--gray-500);
+    margin-top: 0;
     font-weight: 400;
     display: block;
+    line-height: 1;
 }
 
 .main-wrapper {
@@ -1019,7 +1020,7 @@ textarea#doc-title-input:focus {
     background: none;
     border: none;
     color: var(--gray-600);
-    padding: 0.5rem;
+    padding: 0.25rem;
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -1099,7 +1100,7 @@ textarea#doc-title-input:focus {
 }
 
 .badge {
-    padding: 0.25rem 0.75rem;
+    padding: 0.1rem 0.5rem;
     border-radius: 1rem;
     font-size: 0.7rem;
     font-weight: 600;
