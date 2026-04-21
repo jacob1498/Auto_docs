@@ -77,22 +77,6 @@ body {
     max-width: 420px;
 }
 
-/* Only animate cards in the Auth container to prevent "dancing" on view switches */
-#auth-container .card {
-    animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes cardIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
 h2 {
     font-size: 1.875rem;
     font-weight: 600;
@@ -354,7 +338,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.9375rem;
+    font-size: 0.8125rem; /* Reduced to ~13px */
 }
 
 thead {
@@ -366,11 +350,11 @@ thead {
 }
 
 th {
-    padding: 0.5rem 0.75rem;
+    padding: 4px 0.75rem;
     font-weight: 600;
     color: var(--gray-900);
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.05em;
     white-space: nowrap;
     position: sticky;
@@ -378,11 +362,11 @@ th {
 }
 
 td {
-    padding: 0.3rem 0.75rem;
+    padding: 1px 0.75rem;
     border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
     color: var(--gray-900);
-    line-height: 1.4;
+    line-height: 1.2;
 }
 
 th:last-child, td:last-child { border-right: none; }
@@ -657,7 +641,7 @@ tr:hover {
 }
 
 .doc-meta-detail {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--gray-500);
     margin-top: 0;
     font-weight: 400;
@@ -772,7 +756,6 @@ tr:hover {
     border-radius: 1rem;
     border: 1px solid transparent;
     box-shadow: var(--shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: row;
     gap: 1rem;
@@ -793,7 +776,6 @@ tr:hover {
 }
 
 .doc-card:hover {
-    transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
@@ -807,11 +789,9 @@ tr:hover {
     flex-direction: column;
     gap: 0.25rem;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .aging-bracket-card:hover {
-    transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     border-left-width: 6px;
 }
@@ -891,7 +871,6 @@ tr:hover {
 }
 
 .modal-card {
-    animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     max-width: 600px;
     width: 90%;
     max-height: 90vh;
@@ -900,11 +879,6 @@ tr:hover {
 
 .modal-card.modal-wide {
     max-width: 850px;
-}
-
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .modal-actions {
@@ -956,19 +930,11 @@ tr:hover {
 }
 
 .reveal-step {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    max-height: 0;
-    overflow: hidden;
-    pointer-events: none;
+    display: none;
 }
 
 .reveal-step.visible {
-    opacity: 1;
-    transform: translateY(0);
-    max-height: 1000px;
-    pointer-events: all;
+    display: block;
     margin-top: 1.25rem;
 }
 
@@ -1024,6 +990,10 @@ textarea#doc-title-input:focus {
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.action-btns .material-symbols-outlined {
+    font-size: 1.1rem !important; /* Shrink icons to prevent row expansion */
 }
 
 .icon-btn:hover {
@@ -1100,9 +1070,9 @@ textarea#doc-title-input:focus {
 }
 
 .badge {
-    padding: 0.1rem 0.5rem;
+    padding: 0 0.4rem;
     border-radius: 1rem;
-    font-size: 0.7rem;
+    font-size: 0.625rem;
     font-weight: 600;
     text-transform: uppercase;
     display: inline-block;

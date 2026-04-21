@@ -1224,6 +1224,10 @@ function initRealtimeSubscription(user) {
                 } else {
                     renderClientDashboard(user.id, true); // Silent refresh on realtime change
                 }
+                // Automatically refresh dashboard stats on data changes
+                if (currentSidebarView === 'dashboard') {
+                    updateStatsDashboard();
+                }
             })
         .subscribe();
 }
@@ -1276,16 +1280,8 @@ async function showApp(user) {
     // Initialize realtime syncing
     initRealtimeSubscription(user);
 
-    // Start 2-second auto-refresh
+    // Stop any existing intervals; Realtime handles updates now
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-    autoRefreshInterval = setInterval(async () => {
-        if (currentSidebarView === 'documents') {
-            if (currentUserRole === 'admin') renderAdminDashboard(true);
-            else renderClientDashboard(user.id, true);
-        } else if (currentSidebarView === 'dashboard') {
-            updateStatsDashboard();
-        }
-    }, 2000);
 }
 
 function showAuth() {
