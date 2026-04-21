@@ -1288,8 +1288,8 @@ body[data-theme="red"] {
     border: none !important;
     background: none !important;
     padding: 0 !important;
-    font-size: 0.8rem;
-    width: 110px;
+    font-size: 0.75rem; /* Slightly smaller font to fit better */
+    width: 90px; /* Reduced width */
     color: var(--gray-600);
     cursor: pointer;
     box-shadow: none !important;
