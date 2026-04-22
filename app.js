@@ -91,7 +91,7 @@ window.filterByStatus = async (status) => {
 };
 
 // Sidebar Navigation Switching
-async function switchSidebarView(viewName) {
+window.switchSidebarView = async function(viewName) {
     currentSidebarView = viewName;
     localStorage.setItem('doctrack-sidebar-view', viewName);
     document.getElementById('no-results')?.classList.add('hidden');
