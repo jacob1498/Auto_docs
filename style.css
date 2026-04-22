@@ -236,8 +236,9 @@ input:focus, select:focus {
 
 .stats-summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr); /* Optimized for 5 metric cards */
     gap: 1.5rem;
+    align-items: stretch;
     margin-bottom: 2rem;
 }
 
@@ -252,6 +253,21 @@ input:focus, select:focus {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 1px solid var(--gray-100);
 }
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.metric-icon.info { background: #e6f2f4; color: #00758f; }
+.metric-icon.success { background: #e9f4eb; color: #268d44; }
+.metric-icon.warning { background: #f2f0f9; color: #6d59c9; }
+.metric-icon.pending { background: #fff5e6; color: #ff7d00; }
+.metric-icon.danger { background: #fbeaea; color: #d93025; }
 
 .metric-card:hover {
     transform: translateY(-4px);
@@ -1282,7 +1298,7 @@ footer {
     }
 
     .stats-summary-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 1rem;
     }
 

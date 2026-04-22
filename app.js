@@ -80,6 +80,16 @@ window.switchAdminTab = async (tab) => {
     if (session) renderAdminDashboard();
 };
 
+window.filterByStatus = async (status) => {
+    if (currentUserRole === 'admin') {
+        await switchAdminTab(status);
+    } else {
+        // For clients, 'all' maps to the 'all' tab, others map directly
+        await switchClientTab(status);
+    }
+    await switchSidebarView('documents');
+};
+
 // Sidebar Navigation Switching
 async function switchSidebarView(viewName) {
     currentSidebarView = viewName;
@@ -863,7 +873,8 @@ async function updateStatsDashboard() {
         total: docs.length,
         submitted: docs.filter(d => d.status === 'Submitted').length,
         returned: docs.filter(d => d.status === 'Revised').length,
-        completed: docs.filter(d => d.status === 'Completed').length
+        completed: docs.filter(d => d.status === 'Completed').length,
+        cancelled: docs.filter(d => d.status === 'Cancelled').length
     };
 
     // Update metric cards
@@ -871,6 +882,7 @@ async function updateStatsDashboard() {
     if (document.getElementById('stat-pending-docs')) document.getElementById('stat-pending-docs').innerText = stats.submitted;
     if (document.getElementById('stat-returned-docs')) document.getElementById('stat-returned-docs').innerText = stats.returned;
     if (document.getElementById('stat-completed-docs')) document.getElementById('stat-completed-docs').innerText = stats.completed;
+    if (document.getElementById('stat-cancelled-docs')) document.getElementById('stat-cancelled-docs').innerText = stats.cancelled;
 
     // Admin-only breakdown matrix
     const adminSection = document.getElementById('admin-breakdown-section');
@@ -1394,6 +1406,8 @@ async function renderAdminDashboard(isSilent = false) {
         query = query.eq('status', 'Revised');
     } else if (currentAdminTab === 'completed') {
         query = query.eq('status', 'Completed');
+    } else if (currentAdminTab === 'cancelled') {
+        query = query.eq('status', 'Cancelled');
     }
 
     // Apply Aging Bracket filter if active
@@ -1568,6 +1582,12 @@ async function renderClientDashboard(userId, isSilent = false) {
     // Use a whitelist approach (.in) instead of a blacklist (.not.in) 
     // This is much more stable and prevents the "failed to parse filter" error
     switch (currentClientTab) {
+        case 'all':
+            // No filter applied to status
+            break;
+        case 'cancelled':
+            query = query.eq('status', 'Cancelled');
+            break;
         case 'completed':
             query = query.eq('status', 'Completed');
             break;
@@ -1578,9 +1598,8 @@ async function renderClientDashboard(userId, isSilent = false) {
             query = query.eq('status', 'Revised');
             break;
         case 'active':
-        default:
-            // Explicitly list only the statuses allowed in the Active tab
-            query = query.in('status', ['Active', 'Cancelled']);
+        default: 
+            query = query.eq('status', 'Active');
             break;
     }
 

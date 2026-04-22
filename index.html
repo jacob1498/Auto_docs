@@ -116,32 +116,39 @@
                     </div>
 
                     <div class="stats-summary-grid" id="stats-summary-cards">
-                        <div class="metric-card">
+                        <div class="metric-card" onclick="filterByStatus('all')" style="cursor: pointer;">
                             <div class="metric-icon"><span class="material-symbols-outlined">assessment</span></div>
                             <div class="metric-info">
                                 <h3 id="stat-total-docs">0</h3>
                                 <p>Total Documents</p>
                             </div>
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-icon info"><span class="material-symbols-outlined">pending_actions</span></div>
+                        <div class="metric-card" onclick="filterByStatus('submitted')" style="cursor: pointer;">
+                            <div class="metric-icon pending"><span class="material-symbols-outlined">pending_actions</span></div>
                             <div class="metric-info">
                                 <h3 id="stat-pending-docs">0</h3>
                                 <p>Submitted</p>
                             </div>
                         </div>
-                        <div class="metric-card">
+                        <div class="metric-card" onclick="filterByStatus('returned')" style="cursor: pointer;">
                             <div class="metric-icon warning"><span class="material-symbols-outlined">assignment_return</span></div>
                             <div class="metric-info">
                                 <h3 id="stat-returned-docs">0</h3>
                                 <p>Returned</p>
                             </div>
                         </div>
-                        <div class="metric-card">
+                        <div class="metric-card" onclick="filterByStatus('completed')" style="cursor: pointer;">
                             <div class="metric-icon success"><span class="material-symbols-outlined">task_alt</span></div>
                             <div class="metric-info">
                                 <h3 id="stat-completed-docs">0</h3>
                                 <p>Completed</p>
+                            </div>
+                        </div>
+                        <div class="metric-card" onclick="filterByStatus('cancelled')" style="cursor: pointer;">
+                            <div class="metric-icon danger"><span class="material-symbols-outlined">cancel</span></div>
+                            <div class="metric-info">
+                                <h3 id="stat-cancelled-docs">0</h3>
+                                <p>Cancelled</p>
                             </div>
                         </div>
                     </div>
@@ -322,6 +329,7 @@
                             <button class="tab-btn" id="admin-tab-submitted" onclick="switchAdminTab('submitted')">Submitted for Review</button>
                             <button class="tab-btn" id="admin-tab-returned" onclick="switchAdminTab('returned')">Returned Documents</button>
                             <button class="tab-btn" id="admin-tab-completed" onclick="switchAdminTab('completed')">Completed Documents</button>
+                            <button class="tab-btn" id="admin-tab-cancelled" onclick="switchAdminTab('cancelled')">Cancelled</button>
                         </div>
                         <div class="date-filter-group">
                             <span class="material-symbols-outlined">calendar_month</span>
@@ -368,10 +376,12 @@
                 <h1>My Documents</h1>
                 <div class="tab-search-row">
                     <div class="tabs">
+                        <button class="tab-btn" id="client-tab-all" onclick="switchClientTab('all')">All</button>
                         <button class="tab-btn active" id="client-tab-active" onclick="switchClientTab('active')">Active Documents</button>
                         <button class="tab-btn" id="client-tab-returned" onclick="switchClientTab('returned')">Returned Documents</button>
                         <button class="tab-btn" id="client-tab-submitted" onclick="switchClientTab('submitted')">Submitted to Admin</button>
                         <button class="tab-btn" id="client-tab-completed" onclick="switchClientTab('completed')">Completed</button>
+                        <button class="tab-btn" id="client-tab-cancelled" onclick="switchClientTab('cancelled')">Cancelled</button>
                     </div>
                     <div class="date-filter-group">
                         <span class="material-symbols-outlined">calendar_month</span>
