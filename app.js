@@ -273,6 +273,24 @@ document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
 });
 
 // Global Search Functionality
+// Row selection for touch/click support
+document.addEventListener('click', (e) => {
+    const row = e.target.closest('tr');
+    const isDocRow = row && (row.closest('#admin-doc-table') || row.closest('#client-doc-table'));
+    
+    // If clicking a document row, but not clicking an action button directly
+    if (isDocRow && !e.target.closest('.action-btns')) {
+        const wasSelected = row.classList.contains('selected-row');
+        // Clear all selections first
+        document.querySelectorAll('tr.selected-row').forEach(r => r.classList.remove('selected-row'));
+        // Toggle current row if it wasn't already selected
+        if (!wasSelected) row.classList.add('selected-row');
+    } else if (!e.target.closest('tr')) {
+        // Clear selection when clicking completely outside the table
+        document.querySelectorAll('tr.selected-row').forEach(r => r.classList.remove('selected-row'));
+    }
+});
+
 let searchTimeout;
 document.addEventListener('input', (e) => {
     if (!e.target.classList.contains('dashboard-search')) return;

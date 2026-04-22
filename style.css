@@ -997,7 +997,7 @@ textarea#doc-title-input:focus {
 }
 
 /* Show action buttons on row hover */
-tr:hover .action-btns {
+tr:hover .action-btns, tr.selected-row .action-btns {
     opacity: 1;
     visibility: visible;
 }
