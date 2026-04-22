@@ -925,12 +925,12 @@ async function updateStatsDashboard() {
         const clientAgingTbody = document.getElementById('client-aging-tbody');
         if (clientAgingTbody) {
             const clientAgingHTML = Object.entries(clientAging).map(([name, data]) => `
-                <tr onclick="filterByOwnerAging('${name}')" style="cursor: pointer;">
-                    <td style="font-weight: 500;">${name}</td>
-                    <td style="text-align: center;">${data.low}</td>
-                    <td style="text-align: center;">${data.mid > 0 ? `<span class="badge Revised" style="font-size: 0.65rem;">${data.mid}</span>` : '0'}</td>
-                    <td style="text-align: center;">${data.high > 0 ? `<span class="badge Cancelled" style="font-size: 0.65rem;">${data.high}</span>` : '0'}</td>
-                    <td style="text-align: center; font-weight: 700;">${data.total}</td>
+                <tr onclick="filterByOwnerAging('${name}')" style="cursor: pointer;" class="hover-row">
+                    <td style="font-weight: 600; color: var(--gray-900);">${name}</td>
+                    <td style="text-align: center; color: var(--success); font-weight: 500;">${data.low}</td>
+                    <td style="text-align: center;">${data.mid > 0 ? `<span class="badge Revised" style="padding: 0.25rem 0.5rem;">${data.mid}</span>` : '<span style="color:var(--gray-300)">0</span>'}</td>
+                    <td style="text-align: center;">${data.high > 0 ? `<span class="badge Cancelled" style="padding: 0.25rem 0.5rem;">${data.high}</span>` : '<span style="color:var(--gray-300)">0</span>'}</td>
+                    <td style="text-align: center; font-weight: 700; color: var(--primary);">${data.total}</td>
                 </tr>
             `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--gray-400);">No pending documents to analyze.</td></tr>';
 
