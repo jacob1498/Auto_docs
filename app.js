@@ -90,6 +90,16 @@ window.filterByStatus = async (status) => {
     await switchSidebarView('documents');
 };
 
+// Profile Modal Controls
+window.openProfileModal = async function() {
+    document.getElementById('profile-modal-overlay').classList.remove('hidden');
+    await renderProfileView();
+};
+
+window.closeProfileModal = function() {
+    document.getElementById('profile-modal-overlay').classList.add('hidden');
+};
+
 // Sidebar Navigation Switching
 window.switchSidebarView = async function(viewName) {
     currentSidebarView = viewName;
@@ -97,7 +107,6 @@ window.switchSidebarView = async function(viewName) {
     document.getElementById('no-results')?.classList.add('hidden');
     if (viewName === 'dashboard') clearSearchUI();
     
-    const profileView = document.getElementById('profile-view');
     const settingsView = document.getElementById('settings-view');
 
     // Update Active Nav State
@@ -111,15 +120,12 @@ window.switchSidebarView = async function(viewName) {
     const docViews = document.querySelectorAll('.documents-content');
     
     // Hide all views first
-    [statsView, reportsView, profileView, settingsView].forEach(v => v?.classList.add('hidden'));
+    [statsView, reportsView, settingsView].forEach(v => v?.classList.add('hidden'));
     docViews.forEach(v => v.classList.add('hidden'));
 
     if (viewName === 'dashboard') {
         statsView.classList.remove('hidden');
         await updateStatsDashboard();
-    } else if (viewName === 'profile') {
-        profileView.classList.remove('hidden');
-        await renderProfileView();
     } else if (viewName === 'settings') {
         settingsView.classList.remove('hidden');
         const selector = document.getElementById('theme-selector');
@@ -163,6 +169,13 @@ document.getElementById('user-profile-header')?.addEventListener('click', (e) =>
 // Close dropdown when clicking outside
 document.addEventListener('click', () => {
     document.getElementById('profile-dropdown')?.classList.add('hidden');
+});
+
+// Close profile modal when clicking outside
+document.getElementById('profile-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('profile-modal-overlay')) {
+        closeProfileModal();
+    }
 });
 
 // Sidebar Collapse Toggle
