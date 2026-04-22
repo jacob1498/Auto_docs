@@ -999,12 +999,12 @@ async function updateStatsDashboard() {
         const ownerGroups = docs.reduce((acc, doc) => {
             const owner = doc.owner_name || 'Unassigned';
             if (!acc[owner]) {
-                acc[owner] = { Active: 0, Submitted: 0, Revised: 0, Completed: 0, Total: 0 };
+                acc[owner] = { Active: 0, Submitted: 0, Revised: 0, Completed: 0, Cancelled: 0, Total: 0 };
             }
             
             // Map Revised status to Returned label for clarity if needed, 
             // but here we use the DB status keys
-            const statusKey = doc.status === 'Cancelled' ? 'Active' : doc.status;
+            const statusKey = doc.status;
             if (acc[owner].hasOwnProperty(statusKey)) {
                 acc[owner][statusKey]++;
             } else {
@@ -1021,6 +1021,7 @@ async function updateStatsDashboard() {
                 <td>${counts.Submitted > 0 ? `<span class="badge Submitted" style="font-size: 0.65rem;">${counts.Submitted}</span>` : '0'}</td>
                 <td>${counts.Revised > 0 ? `<span class="badge Revised" style="font-size: 0.65rem;">${counts.Revised}</span>` : '0'}</td>
                 <td>${counts.Completed > 0 ? `<span class="badge Completed" style="font-size: 0.65rem;">${counts.Completed}</span>` : '0'}</td>
+                <td>${counts.Cancelled > 0 ? `<span class="badge Cancelled" style="font-size: 0.65rem;">${counts.Cancelled}</span>` : '0'}</td>
                 <td style="font-weight: 700; color: var(--primary);">${counts.Total}</td>
             </tr>
         `).join('');
