@@ -367,6 +367,7 @@ td {
     vertical-align: middle;
     color: var(--gray-900);
     line-height: 1.2;
+    transition: background-color 0.1s ease;
 }
 
 th:last-child, td:last-child { border-right: none; }
@@ -621,10 +622,6 @@ td:nth-last-child(-n+4) {
 .page-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-tr:hover {
-    background-color: #f1f5f9 !important;
 }
 
 /* Styled Status Selects for Admin */
@@ -978,6 +975,9 @@ textarea#doc-title-input:focus {
     cursor: pointer;
     transition: opacity 0.2s;
     display: flex;
+    opacity: 0; /* Hidden by default */
+    visibility: hidden; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out; /* Smooth transition */
     align-items: center;
     justify-content: center;
 }
@@ -994,6 +994,12 @@ textarea#doc-title-input:focus {
 
 .action-btns .material-symbols-outlined {
     font-size: 1.1rem !important; /* Shrink icons to prevent row expansion */
+}
+
+/* Show action buttons on row hover */
+tr:hover .action-btns {
+    opacity: 1;
+    visibility: visible;
 }
 
 .icon-btn:hover {

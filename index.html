@@ -604,6 +604,26 @@
         </div>
     </div>
 
+    <!-- Modal for Return Reason (Admin) -->
+    <div id="return-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <h2>Return Document</h2>
+            <form id="return-reason-form">
+                <div class="field-group">
+                    <label for="return-reason-input">
+                        <span class="material-symbols-outlined">feedback</span>
+                        Reason for Return
+                    </label>
+                    <textarea id="return-reason-input" placeholder="Specify why this document is being returned (mandatory)..." required minlength="5" rows="4" style="width: 100%; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--gray-200); font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-return-modal" class="auth-btn cancel-btn">Cancel</button>
+                    <button type="submit" class="auth-btn btn-danger">Confirm Return</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal for Deletion Confirmation -->
     <div id="confirm-modal-overlay" class="modal-overlay hidden">
         <div class="modal-card card">

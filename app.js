@@ -474,6 +474,37 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible'));
 });
 
+// Return Reason Modal Logic
+let docIdToReturn = null;
+const returnModal = document.getElementById('return-modal-overlay');
+const returnReasonForm = document.getElementById('return-reason-form');
+const returnReasonInput = document.getElementById('return-reason-input');
+
+window.returnToClient = (id) => {
+    docIdToReturn = id;
+    returnReasonInput.value = ''; // Clear previous input
+    returnModal.classList.remove('hidden');
+    returnReasonInput.focus();
+};
+
+document.getElementById('close-return-modal')?.addEventListener('click', () => {
+    returnModal.classList.add('hidden');
+    docIdToReturn = null;
+});
+
+returnReasonForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const reason = returnReasonInput.value.trim();
+    
+    if (!reason) return; // HTML 'required' handles this, but safety first
+
+    const success = await updateStatus(docIdToReturn, 'Revised', 'Returned to client for revision', { return_reason: reason });
+    if (success) {
+        returnModal.classList.add('hidden');
+        docIdToReturn = null;
+    }
+});
+
 docTitleInput?.addEventListener('input', (e) => {
     const length = e.target.value.length;
     if (charCounter) charCounter.innerText = `${length} / 200`;
@@ -546,7 +577,8 @@ addDocForm?.addEventListener('submit', async (e) => {
             created_at: createdAt,
             updated_at: now.toISOString(),
             week: week ? parseInt(week) : null,
-            doc_date: docDate || null
+            doc_date: docDate || null,
+            return_reason: initialStatus === 'Submitted' ? null : undefined // Clear reason on re-submit
         };
 
         if (!editingId) {
@@ -1295,10 +1327,12 @@ function showAuth() {
 
 function calculateAging(dateInput) {
     if (!dateInput) return 0;
-    const created = new Date(dateInput);
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const created = new Date(dateInput);
+    created.setHours(0, 0, 0, 0);
     const diffTime = now - created;
-    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
     return days < 0 ? 0 : days;
 }
 
@@ -1431,12 +1465,14 @@ async function renderAdminDashboard(isSilent = false) {
         const agingClass = aging >= 12 ? 'Cancelled' : (aging >= 8 ? 'Revised' : (aging >= 4 ? 'Submitted' : 'Completed'));
         
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
-        
+        const returnReasonHtml = (doc.status === 'Revised' && doc.return_reason) ? `<span class="doc-meta-detail" style="color: var(--danger); font-weight: 500;">Return Reason: ${doc.return_reason}</span>` : '';
+
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
+                ${returnReasonHtml}
             </td>
             <td style="font-weight: 500; text-align: center; border-right: 1px solid var(--gray-200);">${doc.owner_name || '—'}</td>
             <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
@@ -1565,12 +1601,14 @@ async function renderClientDashboard(userId, isSilent = false) {
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         const agingClass = aging >= 12 ? 'Cancelled' : (aging >= 8 ? 'Revised' : (aging >= 4 ? 'Submitted' : 'Completed'));
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
+        const returnReasonHtml = (doc.status === 'Revised' && doc.return_reason) ? `<span class="doc-meta-detail" style="color: var(--danger); font-weight: 500;">Return Reason: ${doc.return_reason}</span>` : '';
 
         return `
         <tr>
             <td style="box-shadow: inset 5px 0 0 ${doc.category === 'IAAF' ? '#be185d' : '#0369a1'};">
                 <div style="font-weight: 600;">${doc.title}</div>
                 <span class="doc-meta-detail">${detailLine}</span>
+                ${returnReasonHtml}
             </td>
             <td style="font-weight: 500; text-align: center; border-right: 1px solid var(--gray-200);">${doc.owner_name || '—'}</td>
             <td style="text-align: center;"><span class="badge ${doc.category === 'IAAF' ? 'iaaf-badge' : 'ir-badge'}">${doc.category || 'N/A'}</span></td>
@@ -1655,11 +1693,16 @@ function renderPagination(totalCount, currentPage, type) {
 }
 
 // Global function for admin actions
-window.updateStatus = async (id, status, customMsg = null) => {
+window.updateStatus = async (id, status, customMsg = null, extraData = {}) => {
     try {
+        const updatePayload = { 
+            status, 
+            updated_at: new Date().toISOString(),
+            ...extraData 
+        };
         const { error: updateError } = await supabaseClient
             .from('documents')
-            .update({ status, updated_at: new Date().toISOString() })
+            .update(updatePayload)
             .eq('id', id);
         
         if (updateError) throw updateError;
@@ -1702,13 +1745,6 @@ window.receiveDocument = async (id) => {
     currentAdminTab = 'completed'; // Switch UI tab before update triggers re-render
     currentAdminPage = 0; // Reset to first page
     await updateStatus(id, 'Completed');
-};
-
-window.returnToClient = async (id) => {
-    if (!confirm("Return this document to the client for revision?")) return;
-    currentAdminTab = 'returned'; // Switch UI tab before update triggers re-render
-    currentAdminPage = 0; // Reset to first page
-    await updateStatus(id, 'Revised', 'Returned to client for revision');
 };
 
 window.filterByAging = async (label) => {
