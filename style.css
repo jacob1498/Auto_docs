@@ -1,20 +1,22 @@
 :root {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --bg-main: #f8fafc;
+    --primary: #00758f; /* Oracle Redwood Deep Teal */
+    --primary-dark: #005f73;
+    --accent: #ff7d00; /* Oracle Redwood Orange */
+    --bg-main: #fcfaf8; /* Redwood Sand Background */
     --white: #ffffff;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #f1f5f9;
-    --gray-600: #4b5563;
-    --gray-900: #111827;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #3b82f6;
-    --pending: #6366f1;
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --gray-50: #f7f3f0;
+    --gray-100: #ede7e3;
+    --gray-200: #e0d8d2;
+    --gray-600: #6a625d;
+    --gray-900: #2d2926;
+    --success: #268d44;
+    --warning: #ffcc00;
+    --danger: #d93025;
+    --info: #00758f;
+    --pending: #00758f;
+    --shadow: 0 2px 8px rgba(45, 41, 38, 0.08);
+    --redwood-radius: 8px;
+    --redwood-radius-lg: 12px;
 }
 
 /* Top Progress Bar for Refreshing */
@@ -71,8 +73,9 @@ body {
 .card {
     background: var(--white);
     padding: 2.5rem;
-    border-radius: 1.5rem;
+    border-radius: var(--redwood-radius-lg);
     box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
     width: 100%;
     max-width: 420px;
 }
@@ -82,7 +85,7 @@ h2 {
     font-weight: 600;
     margin-top: 0;
     margin-bottom: 1.5rem;
-    text-align: center;
+    text-align: left;
     color: var(--gray-900);
 }
 
@@ -116,7 +119,7 @@ input, select {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid var(--gray-200);
-    border-radius: 0.75rem;
+    border-radius: var(--redwood-radius);
     font-size: 1rem;
     background-color: var(--gray-50);
     transition: all 0.2s;
@@ -135,7 +138,7 @@ input:focus, select:focus {
     color: white;
     padding: 0.875rem;
     border: none;
-    border-radius: 0.75rem;
+    border-radius: var(--redwood-radius);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -220,11 +223,11 @@ input:focus, select:focus {
 
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, var(--white) 0%, var(--gray-50) 100%);
-    border-right: 1px solid var(--gray-200);
+    background: #2d2926; /* Dark Slate Redwood Sidebar */
+    border-right: none;
     display: flex;
     flex-direction: column;
-    color: var(--gray-900);
+    color: #ffffff;
     padding: 2rem 0;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
     z-index: 1000;
@@ -233,15 +236,15 @@ input:focus, select:focus {
 
 .stats-summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
 .metric-card {
     background: var(--white);
-    padding: 1.25rem;
-    border-radius: 1.25rem;
+    padding: 1.5rem;
+    border-radius: var(--redwood-radius);
     display: flex;
     align-items: center;
     gap: 1.25rem;
@@ -303,7 +306,7 @@ input:focus, select:focus {
 
 .nav-item {
     padding: 0.75rem 2rem;
-    color: var(--gray-600);
+    color: #c4c4c4;
     text-decoration: none;
     font-size: 0.9375rem;
     transition: all 0.2s;
@@ -327,8 +330,10 @@ input:focus, select:focus {
 }
 
 .nav-item:hover, .nav-item.active {
-    background: var(--gray-50);
-    color: var(--primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border-left: 4px solid var(--accent);
+    padding-left: calc(2rem - 4px);
 }
 
 .sidebar-user {
@@ -363,7 +368,7 @@ input:focus, select:focus {
 /* Modern Table Styles */
 .table-container {
     background: white;
-    border-radius: 1rem;
+    border-radius: var(--redwood-radius);
     box-shadow: var(--shadow);
     overflow: auto; /* Changed to auto to allow horizontal scroll on small screens */
     margin-top: 1rem;
@@ -380,7 +385,7 @@ table {
 }
 
 thead {
-    background-color: var(--gray-50);
+    background-color: #f7f3f0;
     border-bottom: 2px solid var(--gray-200);
     z-index: 10;
     position: sticky;
@@ -429,7 +434,7 @@ tr:hover {
     gap: 6px;
     background: var(--white);
     padding: 1.5rem;
-    border-radius: 1rem;
+    border-radius: var(--redwood-radius);
     border: 1px solid var(--gray-200);
     box-shadow: var(--shadow);
 }
@@ -440,19 +445,37 @@ tr:hover {
     font-size: 0.7rem;
     font-family: 'JetBrains Mono', monospace;
     border: 1px solid transparent;
-    font-weight: 700;
+    font-weight: 600; /* Slightly less bold */
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
     cursor: help;
-    transition: transform 0.2s, filter 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    box-shadow: var(--shadow); /* Add a subtle shadow by default */
 }
 
 .serial-node:hover {
-    transform: scale(1.2);
-    filter: brightness(1.1);
+    transform: translateY(-2px); /* Lift slightly */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* More pronounced shadow on hover */
     z-index: 10;
+}
+
+.serial-node.empty:hover {
+    transform: none; /* No lift for empty nodes */
+    box-shadow: none;
+    background: var(--gray-100); /* Slightly darker background on hover */
+}
+
+/* Ensure specific status colors are applied */
+.serial-node.Completed, .serial-node.Submitted, .serial-node.Cancelled, .serial-node.Revised, .serial-node.Active {
+    color: var(--gray-900); /* Use a dark text color for better contrast on light backgrounds */
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-top: 0.5rem;
+    line-height: 1.4;
 }
 
 .serial-node.empty {
@@ -485,7 +508,7 @@ tr:hover {
     right: 0;
     background: var(--white);
     border: 1px solid var(--gray-200);
-    border-radius: 1rem;
+    border-radius: var(--redwood-radius);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     min-width: 200px;
     padding: 0.5rem;
@@ -818,7 +841,7 @@ td:nth-last-child(-n+4) {
 
 .aging-brackets-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -1088,9 +1111,9 @@ tr:hover .action-btns button, tr.selected-row .action-btns button {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
-    background: rgba(255, 255, 255, 0.5);
+    background: #ede7e3;
     padding: 0.4rem;
-    border-radius: 0.75rem;
+    border-radius: var(--redwood-radius);
     border: 1px solid var(--gray-200);
     width: fit-content;
 }
@@ -1107,7 +1130,7 @@ tr:hover .action-btns button, tr.selected-row .action-btns button {
 .tab-btn {
     padding: 0.5rem 1.25rem;
     border: none;
-    border-radius: 0.6rem;
+    border-radius: 6px;
     background: none;
     cursor: pointer;
     font-weight: 600;
@@ -1129,7 +1152,7 @@ tr:hover .action-btns button, tr.selected-row .action-btns button {
     transform: translateX(-50%);
     color: white;
     padding: 1rem 1.5rem;
-    border-radius: 1rem;
+    border-radius: var(--redwood-radius);
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -1147,8 +1170,8 @@ tr:hover .action-btns button, tr.selected-row .action-btns button {
 }
 
 .badge {
-    padding: 0 0.4rem;
-    border-radius: 1rem;
+    padding: 2px 8px;
+    border-radius: 4px;
     font-size: 0.625rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -1157,11 +1180,11 @@ tr:hover .action-btns button, tr.selected-row .action-btns button {
 }
 
 /* Status Badge Colors */
-.badge.Active { background: #e0e7ff; color: #4338ca; }
-.badge.Completed { background: #dcfce7; color: #15803d; }
-.badge.Submitted { background: #e0f2fe; color: #0369a1; }
-.badge.Cancelled { background: #fee2e2; color: #b91c1c; }
-.badge.Revised { background: #fef3c7; color: #b45309; }
+.badge.Active { background: #e6f2f4; color: #00758f; border: 1px solid #cce3e9; }
+.badge.Completed { background: #e9f4eb; color: #268d44; border: 1px solid #d3e9d9; }
+.badge.Submitted { background: #fff5e6; color: #ff7d00; border: 1px solid #ffebcc; }
+.badge.Cancelled { background: #fbeaea; color: #d93025; border: 1px solid #f7d6d5; }
+.badge.Revised { background: #f2f0f9; color: #6d59c9; border: 1px solid #e5e1f3; }
 
 .badge[class*="Adjustment"] {
     background: #f1f5f9;
@@ -1267,6 +1290,12 @@ footer {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    #profile-view .card {
+        max-width: 100%; /* Allow profile card to take full width */
+        margin: 0 1rem; /* Add some horizontal margin for spacing */
+        padding: 1.5rem; /* Adjust padding for smaller screens */
+    }
+
     /* Ensure action buttons are always visible on mobile devices */
     .action-btns button {
         opacity: 1;
@@ -1283,6 +1312,10 @@ footer {
     .modal-grid {
         grid-template-columns: 1fr !important;
         gap: 1rem;
+    }
+    #profile-view .card {
+        padding: 1rem; /* Even smaller padding for very small screens */
+        margin: 0 0.5rem;
     }
     .modal-actions {
         flex-direction: column-reverse;
