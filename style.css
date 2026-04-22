@@ -255,6 +255,13 @@ input:focus, select:focus {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
+.dashboard-content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
 .sidebar.collapsed {
     width: 80px;
 }
@@ -327,6 +334,13 @@ input:focus, select:focus {
 .sidebar-user {
     padding: 2rem;
     border-top: 1px solid var(--gray-100);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
 }
 
 #user-display {
@@ -828,6 +842,14 @@ td:nth-last-child(-n+4) {
     transform: scale(1.02);
 }
 
+.dashboard-card {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-100);
+}
+
 .dashboard-table {
     margin-top: 0;
     border: 1px solid var(--gray-100);
@@ -1234,6 +1256,15 @@ footer {
 
     .dashboard-content-grid {
         grid-template-columns: 1fr;
+    }
+
+    .stats-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .aging-brackets-container {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     /* Ensure action buttons are always visible on mobile devices */
