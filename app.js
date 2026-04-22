@@ -908,11 +908,11 @@ async function updateStatsDashboard() {
         };
         
         const agingHTML = Object.entries(brackets).map(([label, count]) => `
-            <div class="aging-bracket-card" style="border-left-color: ${colors[label]}" onclick="filterByAging('${label}')">
-                <span style="font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase;">${label}</span>
-                <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-                    <h3 style="margin:0; font-size: 1.5rem;">${count}</h3>
-                    <span style="font-size: 0.875rem; color: var(--gray-400);">docs</span>
+            <div class="aging-bracket-card" style="border-top-color: ${colors[label]}" onclick="filterByAging('${label}')">
+                <span style="font-size: 0.65rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.025em;">${label}</span>
+                <div style="display: flex; align-items: baseline; gap: 0.25rem;">
+                    <h3 style="margin:0; font-size: 1.75rem; color: var(--gray-900);">${count}</h3>
+                    <span style="font-size: 0.75rem; color: var(--gray-500); font-weight: 500;">docs</span>
                 </div>
             </div>
         `).join('');
