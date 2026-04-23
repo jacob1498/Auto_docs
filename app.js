@@ -294,6 +294,8 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
         let msg = err.message;
         if (msg.includes("row-level security")) {
             msg = "Permission denied: Please check your Supabase 'profiles' table RLS policies (Insert/Update).";
+        } else if (msg.includes("column") && msg.includes("schema cache")) {
+            msg = "Database Error: The 'avatar_url' column is missing in your 'profiles' table. Please run the SQL setup script.";
         }
         showToast("Upload failed: " + msg, "error");
         placeholder.innerHTML = originalContent;
@@ -1255,6 +1257,8 @@ async function updateProfile() {
         let msg = err.message;
         if (msg.includes("row-level security")) {
             msg = "Permission denied: Please check your Supabase 'profiles' table RLS policies (Insert/Update).";
+        } else if (msg.includes("column") && msg.includes("schema cache")) {
+            msg = "Database Error: A required column is missing in your 'profiles' table.";
         }
         showToast("Update failed: " + msg, "error");
     } finally {
