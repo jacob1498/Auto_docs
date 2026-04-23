@@ -1472,7 +1472,9 @@ async function renderAdminDashboard(isSilent = false) {
         .select('*', { count: 'exact' });
 
     // Optimized filtering for Admin tabs
-    if (currentAdminTab === 'submitted') {
+    if (currentAdminTab === 'active') {
+        query = query.eq('status', 'Active');
+    } else if (currentAdminTab === 'submitted') {
         query = query.eq('status', 'Submitted');
     } else if (currentAdminTab === 'returned') {
         query = query.eq('status', 'Revised');
