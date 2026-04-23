@@ -291,7 +291,11 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
         showToast("Avatar updated successfully!");
         await renderProfileView();
     } catch (err) {
-        showToast("Upload failed: " + err.message, "error");
+        let msg = err.message;
+        if (msg.includes("row-level security")) {
+            msg = "Permission denied: Please check your Supabase 'profiles' table RLS policies (Insert/Update).";
+        }
+        showToast("Upload failed: " + msg, "error");
         placeholder.innerHTML = originalContent;
     }
 });
