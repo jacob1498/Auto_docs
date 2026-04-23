@@ -266,7 +266,7 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
 
         const { error: uploadError } = await supabaseClient.storage
             .from('avatars')
-            .upload(fileName, compressedBlob);
+            .upload(fileName, compressedBlob, { contentType: 'image/jpeg', upsert: true });
 
         if (uploadError) {
             if (uploadError.message.includes("not found")) {
@@ -1252,7 +1252,11 @@ async function updateProfile() {
         document.getElementById('header-user-name').innerText = displayName;
         showToast("Profile updated successfully!");
     } catch (err) {
-        showToast("Update failed: " + err.message, "error");
+        let msg = err.message;
+        if (msg.includes("row-level security")) {
+            msg = "Permission denied: Please check your Supabase 'profiles' table RLS policies (Insert/Update).";
+        }
+        showToast("Update failed: " + msg, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined">save</span> Save Changes';
