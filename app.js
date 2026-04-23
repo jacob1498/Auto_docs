@@ -232,7 +232,6 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
             .from('avatars')
             .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
         if (uploadError) {
             if (uploadError.message.includes("not found")) {
                 throw new Error("Storage bucket 'avatars' not found. Please create it in your Supabase dashboard and set it to 'Public'.");
