@@ -233,12 +233,23 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
             .upload(fileName, file);
 
         if (uploadError) throw uploadError;
+        if (uploadError) {
+            if (uploadError.message.includes("not found")) {
+                throw new Error("Storage bucket 'avatars' not found. Please create it in your Supabase dashboard and set it to 'Public'.");
+            }
+            throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
 
         const { error: updateError } = await supabaseClient
             .from('profiles')
-            .upsert({ id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() });
+            .upsert({ 
+                id: user.id, 
+                avatar_url: publicUrl, 
+                role: currentUserRole || user.user_metadata?.role || 'client',
+                updated_at: new Date().toISOString() 
+            });
 
         if (updateError) throw updateError;
 
@@ -1191,6 +1202,7 @@ async function updateProfile() {
             .upsert({ 
                 id: user.id, 
                 full_name: fullName, 
+                role: currentUserRole || user.user_metadata?.role || 'client',
                 updated_at: new Date().toISOString() 
             });
 
