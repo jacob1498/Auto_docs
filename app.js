@@ -214,6 +214,33 @@ document.getElementById('password-form')?.addEventListener('submit', async (e) =
     }
 });
 
+// Helper to compress and resize image for faster uploads
+const compressAvatar = async (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const size = 300; // Standard avatar size
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                // Square crop and resize
+                const minDir = Math.min(img.width, img.height);
+                const sx = (img.width - minDir) / 2;
+                const sy = (img.height - minDir) / 2;
+                ctx.drawImage(img, sx, sy, minDir, minDir, 0, 0, size, size);
+                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
+};
+
 document.getElementById('avatar-input')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -221,16 +248,25 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
+    // Optimistic UI: Show image immediately using local URL
+    const localUrl = URL.createObjectURL(file);
+    const headerImg = document.getElementById('header-avatar-img');
+    const profileImg = document.getElementById('profile-avatar-img');
+    if (headerImg) { headerImg.src = localUrl; headerImg.style.display = 'block'; }
+    if (profileImg) { profileImg.src = localUrl; profileImg.style.display = 'block'; }
+
     const placeholder = document.getElementById('profile-avatar-placeholder');
     const originalContent = placeholder.innerHTML;
     placeholder.innerHTML = '<div class="spinner spinner-dark"></div>';
 
     try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        // Compress image before upload (converts to JPEG)
+        const compressedBlob = await compressAvatar(file);
+        const fileName = `${user.id}-${Date.now()}.jpg`;
+
         const { error: uploadError } = await supabaseClient.storage
             .from('avatars')
-            .upload(fileName, file);
+            .upload(fileName, compressedBlob);
 
         if (uploadError) {
             if (uploadError.message.includes("not found")) {
