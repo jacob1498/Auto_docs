@@ -476,6 +476,58 @@ tr:hover {
     z-index: 10;
 }
 
+/* Avatar Upload & Profile Styles */
+.user-avatar-upload {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+}
+
+.avatar-preview {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+    box-shadow: var(--shadow);
+    background-color: var(--gray-50);
+}
+
+.avatar-placeholder {
+    width: 88px;
+    height: 88px;
+    background: var(--gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+
+.avatar-edit-label {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: var(--shadow);
+    transition: all 0.2s;
+}
+
+.avatar-edit-label:hover {
+    background: var(--primary-dark);
+    transform: scale(1.1);
+}
+
 .serial-node.empty:hover {
     transform: none; /* No lift for empty nodes */
     box-shadow: none;

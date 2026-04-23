@@ -238,8 +238,7 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
 
         const { error: updateError } = await supabaseClient
             .from('profiles')
-            .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-            .eq('id', user.id);
+            .upsert({ id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() });
 
         if (updateError) throw updateError;
 
@@ -1171,7 +1170,7 @@ async function renderProfileView(passedUser = null) {
     } else {
         if (profileImg) profileImg.style.display = 'none';
         if (profilePh) profilePh.style.display = 'flex';
-        if (headerImg) headerImg.style.display = 'none';
+        if (headerImg) { headerImg.src = ''; headerImg.style.display = 'none'; }
         if (headerPh) headerPh.style.display = 'flex';
     }
 }
