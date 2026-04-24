@@ -41,6 +41,12 @@ let lastAgingBracketsHTML = "";
 let lastOwnerMatrixHTML = "";
 let lastClientAgingTableHTML = "";
 
+// Global Loader Management
+function hideSplashScreen() {
+    const splash = document.getElementById('app-splash');
+    if (splash) splash.classList.add('fade-out');
+}
+
 // Helper to synchronize search UI and state
 function clearSearchUI() {
     currentSearchTerm = '';
@@ -1471,6 +1477,8 @@ window.exportRawDataToCSV = async () => {
 // Realtime Subscription Logic
 function initRealtimeSubscription(user) {
     if (realtimeSubscription) return;
+    
+    hideSplashScreen();
 
     realtimeSubscription = supabaseClient
         .channel('schema-db-changes')
@@ -1499,6 +1507,7 @@ async function showApp(user) {
     // Hide login screen and show the app
     authContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
+    hideSplashScreen();
 
     // Update header with initial user info from metadata
     const role = user.user_metadata?.role || 'user';
@@ -1545,6 +1554,7 @@ async function showApp(user) {
 function showAuth() {
     authContainer.classList.remove('hidden');
     appContainer.classList.add('hidden');
+    hideSplashScreen();
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     // Ensure we default to the login view when showing auth
     loginView.classList.remove('hidden');

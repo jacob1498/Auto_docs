@@ -10,7 +10,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div id="auth-container">
+    <!-- Oracle Inspired Splash Screen -->
+    <div id="app-splash" class="app-splash">
+        <div class="splash-logo">DocTrack</div>
+        <div class="spinner spinner-dark"></div>
+        <p style="margin-top: 1.5rem; color: var(--gray-600); font-weight: 500; font-size: 0.9rem;">Initializing Secure Session...</p>
+    </div>
+
+    <div id="auth-container" class="hidden">
         <!-- Login View -->
         <section id="login-view" class="card">
             <h2>Login</h2>
