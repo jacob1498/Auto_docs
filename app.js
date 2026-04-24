@@ -924,29 +924,42 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 async function updateStatsDashboard() {
-    const { data: docs, error } = await supabaseClient.from('documents').select('status, owner_name, created_at, doc_date, control_number, category');
-    if (error) return;
+    // --- 1. Fetch high-level stats using aggregate queries ---
+    const { count: totalCount, error: totalError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true });
+    const { count: submittedCount, error: submittedError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Submitted');
+    const { count: returnedCount, error: returnedError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Revised');
+    const { count: completedCount, error: completedError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Completed');
+    const { count: cancelledCount, error: cancelledError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Cancelled');
 
-    // Calculate high-level stats
-    const stats = {
-        total: docs.length,
-        submitted: docs.filter(d => d.status === 'Submitted').length,
-        returned: docs.filter(d => d.status === 'Revised').length,
-        completed: docs.filter(d => d.status === 'Completed').length,
-        cancelled: docs.filter(d => d.status === 'Cancelled').length
-    };
+    if (totalError || submittedError || returnedError || completedError || cancelledError) {
+        console.error("Error fetching dashboard stats:", totalError || submittedError || returnedError || completedError || cancelledError);
+        return;
+    }
 
     // Update metric cards
-    if (document.getElementById('stat-total-docs')) document.getElementById('stat-total-docs').innerText = stats.total;
-    if (document.getElementById('stat-pending-docs')) document.getElementById('stat-pending-docs').innerText = stats.submitted;
-    if (document.getElementById('stat-returned-docs')) document.getElementById('stat-returned-docs').innerText = stats.returned;
-    if (document.getElementById('stat-completed-docs')) document.getElementById('stat-completed-docs').innerText = stats.completed;
-    if (document.getElementById('stat-cancelled-docs')) document.getElementById('stat-cancelled-docs').innerText = stats.cancelled;
+    if (document.getElementById('stat-total-docs')) document.getElementById('stat-total-docs').innerText = totalCount;
+    if (document.getElementById('stat-pending-docs')) document.getElementById('stat-pending-docs').innerText = submittedCount;
+    if (document.getElementById('stat-returned-docs')) document.getElementById('stat-returned-docs').innerText = returnedCount;
+    if (document.getElementById('stat-completed-docs')) document.getElementById('stat-completed-docs').innerText = completedCount;
+    if (document.getElementById('stat-cancelled-docs')) document.getElementById('stat-cancelled-docs').innerText = cancelledCount;
 
     // Admin-only breakdown matrix
     const adminSection = document.getElementById('admin-breakdown-section');
     const adminSerialSection = document.getElementById('admin-serial-monitor-section');
     const adminAgingSection = document.getElementById('admin-aging-section');
+
+    // --- 2. Fetch data for Admin-specific sections (Aging, Serial, Owner Matrix) ---
+    // This still fetches a subset of columns, but only when needed for admin dashboard.
+    // For very large datasets, these might also need further optimization (e.g., database views, functions).
+    const { data: adminDocs, error: adminDocsError } = await supabaseClient
+        .from('documents')
+        .select('status, owner_name, created_at, doc_date, control_number, category, title'); // Only fetch necessary columns
+
+    if (adminDocsError) {
+        console.error("Error fetching admin dashboard documents:", adminDocsError);
+        return;
+    }
+    const docs = adminDocs || []; // Use the fetched adminDocs
 
     if (currentUserRole === 'admin') {
         adminSection.classList.remove('hidden');
@@ -954,30 +967,35 @@ async function updateStatsDashboard() {
         adminAgingSection.classList.remove('hidden');
 
         // Calculate Aging Brackets for Submitted docs
-        const pendingDocs = docs.filter(d => !['Completed', 'Cancelled'].includes(d.status));
+        const pendingDocs = docs.filter(d => !['Completed', 'Cancelled'].includes(d.status) && d.doc_date); // Ensure doc_date exists for aging
         const brackets = { '0-3 Days': 0, '4-7 Days': 0, '8-11 Days': 0, '12+ Days': 0 };
         const clientAging = {};
         
         pendingDocs.forEach(d => {
-            const age = calculateAging(d.doc_date || d.created_at);
+            const age = calculateAging(d.doc_date); // Use doc_date for aging
             const owner = d.owner_name || 'Unassigned';
             if (!clientAging[owner]) clientAging[owner] = { 'low': 0, 'mid': 0, 'high': 0, 'total': 0 };
 
-            if (age <= 3) { brackets['0-3 Days']++; clientAging[owner].low++; }
-            else if (age <= 7) { brackets['4-7 Days']++; clientAging[owner].mid++; }
-            else if (age <= 11) { brackets['8-11 Days']++; clientAging[owner].high++; }
-            else { brackets['12+ Days']++; clientAging[owner].high++; }
-            clientAging[owner].total++;
+            // Only count if age is valid (non-negative)
+            if (age >= 0) {
+                if (age <= 3) { brackets['0-3 Days']++; clientAging[owner].low++; }
+                else if (age <= 7) { brackets['4-7 Days']++; clientAging[owner].mid++; }
+                else if (age <= 11) { brackets['8-11 Days']++; clientAging[owner].high++; }
+                else { brackets['12+ Days']++; clientAging[owner].high++; }
+                clientAging[owner].total++;
+            }
         });
 
         const agingContainer = document.getElementById('aging-brackets-container');
         const colors = { 
             '0-3 Days': 'var(--success)', 
             '4-7 Days': 'var(--info)', 
-            '8-11 Days': 'var(--warning)', 
+            '8-11 Days': 'var(--pending)', // Using pending color for consistency
             '12+ Days': 'var(--danger)' 
         };
         
+        // Check if agingContainer exists before updating
+        if (agingContainer) {
         const agingHTML = Object.entries(brackets).map(([label, count]) => `
             <div class="aging-bracket-card" style="border-top-color: ${colors[label]}" onclick="filterByAging('${label}')">
                 <span style="font-size: 0.65rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.025em;">${label}</span>
@@ -987,24 +1005,23 @@ async function updateStatsDashboard() {
                 </div>
             </div>
         `).join('');
-
-        if (agingHTML !== lastAgingBracketsHTML) {
-            agingContainer.innerHTML = agingHTML;
-            lastAgingBracketsHTML = agingHTML;
+            if (agingHTML !== lastAgingBracketsHTML) {
+                agingContainer.innerHTML = agingHTML;
+                lastAgingBracketsHTML = agingHTML;
+            }
         }
 
         const clientAgingTbody = document.getElementById('client-aging-tbody');
         if (clientAgingTbody) {
             const clientAgingHTML = Object.entries(clientAging).map(([name, data]) => `
                 <tr onclick="filterByOwnerAging('${name}')" style="cursor: pointer;" class="hover-row">
-                    <td style="font-weight: 600; color: var(--gray-900);">${name}</td>
+                    <td style="font-weight: 600; color: var(--gray-900);">${name || 'Unassigned'}</td>
                     <td style="text-align: center; color: var(--success); font-weight: 500;">${data.low}</td>
                     <td style="text-align: center;">${data.mid > 0 ? `<span class="badge Revised" style="padding: 0.25rem 0.5rem;">${data.mid}</span>` : '<span style="color:var(--gray-300)">0</span>'}</td>
                     <td style="text-align: center;">${data.high > 0 ? `<span class="badge Cancelled" style="padding: 0.25rem 0.5rem;">${data.high}</span>` : '<span style="color:var(--gray-300)">0</span>'}</td>
                     <td style="text-align: center; font-weight: 700; color: var(--primary);">${data.total}</td>
                 </tr>
             `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--gray-400);">No pending documents to analyze.</td></tr>';
-
             if (clientAgingHTML !== lastClientAgingTableHTML) {
                 clientAgingTbody.innerHTML = clientAgingHTML;
                 lastClientAgingTableHTML = clientAgingHTML;
@@ -1019,7 +1036,7 @@ async function updateStatsDashboard() {
         // Create a map of existing serials for quick lookup
         const serialMap = {};
         iaafDocs.forEach(d => {
-            const num = parseInt(d.control_number.split('-').pop());
+            const num = d.control_number ? parseInt(d.control_number.split('-').pop()) : NaN;
             if (!isNaN(num)) serialMap[num] = d;
         });
 
@@ -1029,6 +1046,7 @@ async function updateStatsDashboard() {
             ranges.push({ start: i, end: i + 99 });
         }
 
+        // Check if rangeControls exists before updating
         if (rangeControls) {
             rangeControls.innerHTML = ranges.map(r => `
                 <button class="tab-btn ${currentSerialStart === r.start ? 'active' : ''}" 
@@ -1036,6 +1054,7 @@ async function updateStatsDashboard() {
                         onclick="setSerialRange(${r.start})">
                     ${r.start}-${r.end}
                 </button>
+                <span class="material-symbols-outlined"></span>
             `).join('');
         }
 
@@ -1050,7 +1069,9 @@ async function updateStatsDashboard() {
                 gridHTML += `<div class="serial-node empty" title="Serial: ${displayNum}\nStatus: Available">${displayNum}</div>`;
             }
         }
-        serialGrid.innerHTML = gridHTML;
+        if (serialGrid) { // Check if serialGrid exists before updating
+            serialGrid.innerHTML = gridHTML;
+        }
 
         const matrixBody = document.querySelector('#owner-status-matrix tbody');
         
@@ -1060,10 +1081,9 @@ async function updateStatsDashboard() {
             if (!acc[owner]) {
                 acc[owner] = { Active: 0, Submitted: 0, Revised: 0, Completed: 0, Cancelled: 0, Total: 0 };
             }
-            
-            // Map Revised status to Returned label for clarity if needed, 
-            // but here we use the DB status keys
+
             const statusKey = doc.status;
+            // Ensure the status key exists in the accumulator, otherwise default to Active
             if (acc[owner].hasOwnProperty(statusKey)) {
                 acc[owner][statusKey]++;
             } else {
@@ -1074,7 +1094,7 @@ async function updateStatsDashboard() {
         }, {});
 
         const matrixHTML = Object.entries(ownerGroups).map(([name, counts]) => `
-            <tr>
+            <tr class="hover-row">
                 <td style="font-weight: 500; color: var(--gray-900);">${name}</td>
                 <td>${counts.Active}</td>
                 <td>${counts.Submitted > 0 ? `<span class="badge Submitted" style="font-size: 0.65rem;">${counts.Submitted}</span>` : '0'}</td>
@@ -1085,9 +1105,11 @@ async function updateStatsDashboard() {
             </tr>
         `).join('');
 
-        if (matrixHTML !== lastOwnerMatrixHTML) {
-            matrixBody.innerHTML = matrixHTML;
-            lastOwnerMatrixHTML = matrixHTML;
+        if (matrixBody) { // Check if matrixBody exists before updating
+            if (matrixHTML !== lastOwnerMatrixHTML) {
+                matrixBody.innerHTML = matrixHTML;
+                lastOwnerMatrixHTML = matrixHTML;
+            }
         }
     } else if (adminSection) {
         adminSection.classList.add('hidden');
@@ -1098,7 +1120,7 @@ async function updateStatsDashboard() {
 
 async function renderReportsView() {
     const { data: docs, error } = await supabaseClient
-        .from('documents')
+        .from('documents') // This still fetches all documents for reports, consider aggregate queries for large datasets
         .select('category, status, created_at, period');
     
     if (error || !docs) return;
@@ -1463,27 +1485,29 @@ async function renderAdminDashboard(isSilent = false) {
     });
 
     let query = supabaseClient
-        .from('documents')
+        .from('documents') // Changed to select specific columns
         .select('*', { count: 'exact' });
 
     // Optimized filtering for Admin tabs
-    if (currentAdminTab === 'active') {
-        query = query.eq('status', 'Active');
-    } else if (currentAdminTab === 'submitted') {
-        query = query.eq('status', 'Submitted');
-    } else if (currentAdminTab === 'returned') {
-        query = query.eq('status', 'Revised');
-    } else if (currentAdminTab === 'completed') {
-        query = query.eq('status', 'Completed');
-    } else if (currentAdminTab === 'cancelled') {
-        query = query.eq('status', 'Cancelled');
+    if (!currentSearchTerm) {
+        if (currentAdminTab === 'active') {
+            query = query.eq('status', 'Active');
+        } else if (currentAdminTab === 'submitted') {
+            query = query.eq('status', 'Submitted');
+        } else if (currentAdminTab === 'returned') {
+            query = query.eq('status', 'Revised');
+        } else if (currentAdminTab === 'completed') {
+            query = query.eq('status', 'Completed');
+        } else if (currentAdminTab === 'cancelled') {
+            query = query.eq('status', 'Cancelled');
+        }
     }
 
     // Apply Aging Bracket filter if active
-    if (currentAdminAgingFilter) {
+    if (currentAdminAgingFilter && !currentSearchTerm) {
         // Ensure we only show pending/in-progress docs when filtering by aging
         query = query.not('status', 'in', '("Completed","Cancelled")');
-        
+
         const now = new Date();
         if (currentAdminAgingFilter === '0-3 Days') {
             const limit = new Date();
@@ -1513,7 +1537,7 @@ async function renderAdminDashboard(isSilent = false) {
     if (currentStartDate) query = query.gte('doc_date', currentStartDate);
     if (currentEndDate) query = query.lte('doc_date', currentEndDate);
 
-    const from = currentAdminPage * PAGE_SIZE;
+    const from = currentAdminPage * PAGE_SIZE; // Pagination
     const to = from + PAGE_SIZE - 1;
 
     const { data: docs, error, count } = await query
@@ -1541,10 +1565,11 @@ async function renderAdminDashboard(isSilent = false) {
     // Update Stats Bar with count
     const statsBar = document.querySelector('.stats-bar');
     if (statsBar) {
-        const filterLabel = currentAdminAgingFilter ? ` | Aging: ${currentAdminAgingFilter}` : '';
+        const filterLabel = (currentAdminAgingFilter && !currentSearchTerm) ? ` | Aging: ${currentAdminAgingFilter}` : '';
         const dateLabel = (currentStartDate || currentEndDate) ? ` | Date: ${currentStartDate || 'Any'} to ${currentEndDate || 'Today'}` : '';
         const searchLabel = currentSearchTerm ? ` | Search: "${currentSearchTerm}"` : '';
-        const statsHTML = `<span class="material-symbols-outlined">analytics</span> ${currentAdminTab.toUpperCase()} Documents${filterLabel}${dateLabel}${searchLabel} | Total: ${count || 0}`;
+        const tabName = currentSearchTerm ? "SEARCH RESULTS" : currentAdminTab.toUpperCase();
+        const statsHTML = `<span class="material-symbols-outlined">analytics</span> ${tabName} Documents${filterLabel}${dateLabel}${searchLabel} | Total: ${count || 0}`;
         
         if (statsHTML !== lastAdminStatsBarHTML) {
             statsBar.innerHTML = statsHTML;
@@ -1562,7 +1587,7 @@ async function renderAdminDashboard(isSilent = false) {
         const createdDate = doc.doc_date || new Date(doc.created_at).toLocaleDateString();
         const updatedDate = doc.updated_at ? new Date(doc.updated_at).toLocaleString() : 'N/A';
         
-        // Color-code aging badge: 0-3 (Green), 4-7 (Blue), 8-11 (Orange), 12+ (Red)
+        // Color-code aging badge: 0-3 (Green), 4-7 (Blue), 8-11 (Orange/Pending), 12+ (Red)
         const agingClass = aging >= 12 ? 'Cancelled' : (aging >= 8 ? 'Revised' : (aging >= 4 ? 'Submitted' : 'Completed'));
         
         const detailLine = doc.category === 'IAAF' ? `${doc.adj_type || ''} | ${doc.amount_range || ''} | ${doc.charge_to || ''} | ${doc.reason_description || ''}` : 'Standard Record';
@@ -1644,32 +1669,34 @@ async function renderClientDashboard(userId, isSilent = false) {
     });
 
     let query = supabaseClient
-        .from('documents')
+        .from('documents') // Changed to select specific columns
         .select('*', { count: 'exact' })
         .eq('owner_id', userId);
 
     // Use a whitelist approach (.in) instead of a blacklist (.not.in) 
     // This is much more stable and prevents the "failed to parse filter" error
-    switch (currentClientTab) {
-        case 'all':
-            // No filter applied to status
-            break;
-        case 'cancelled':
-            query = query.eq('status', 'Cancelled');
-            break;
-        case 'completed':
-            query = query.eq('status', 'Completed');
-            break;
-        case 'submitted':
-            query = query.eq('status', 'Submitted');
-            break;
-        case 'returned':
-            query = query.eq('status', 'Revised');
-            break;
-        case 'active':
-        default: 
-            query = query.eq('status', 'Active');
-            break;
+    if (!currentSearchTerm) {
+        switch (currentClientTab) {
+            case 'all':
+                // No filter applied to status
+                break;
+            case 'cancelled':
+                query = query.eq('status', 'Cancelled');
+                break;
+            case 'completed':
+                query = query.eq('status', 'Completed');
+                break;
+            case 'submitted':
+                query = query.eq('status', 'Submitted');
+                break;
+            case 'returned':
+                query = query.eq('status', 'Revised');
+                break;
+            case 'active':
+            default: 
+                query = query.eq('status', 'Active');
+                break;
+        }
     }
 
     // Server-side filtering logic
