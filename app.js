@@ -502,6 +502,47 @@ function checkDisclosure() {
     }
 }
 
+async function loadSubjectSuggestions() {
+    const container = document.getElementById('subject-suggestions');
+    if (!container) return;
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    // Fetch the 20 most recent titles to find common patterns
+    const { data: docs } = await supabaseClient
+        .from('documents')
+        .select('title')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (!docs || docs.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    // Get unique titles and count occurrences
+    const counts = docs.reduce((acc, d) => {
+        acc[d.title] = (acc[d.title] || 0) + 1;
+        return acc;
+    }, {});
+
+    const commonTitles = Object.keys(counts)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, 5); // Show top 5 suggestions
+
+    container.innerHTML = commonTitles.map(title => `
+        <div class="suggestion-chip" onclick="applySuggestion('${title.replace(/'/g, "\\'")}')">${title}</div>
+    `).join('');
+}
+
+window.applySuggestion = (text) => {
+    const input = document.getElementById('doc-title-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input')); // Trigger disclosure and char count
+};
+
 ownerSelect?.addEventListener('change', checkDisclosure);
 dateInput?.addEventListener('change', checkDisclosure);
 docTitleInput?.addEventListener('input', checkDisclosure);
@@ -546,6 +587,7 @@ document.getElementById('upload-trigger')?.addEventListener('click', () => {
         updateTrackingFields(today);
     }
     checkDisclosure();
+    loadSubjectSuggestions();
 });
 
 document.getElementById('close-modal')?.addEventListener('click', () => {
@@ -558,7 +600,11 @@ document.getElementById('close-modal')?.addEventListener('click', () => {
     // Reset disclosure
     editingId = null;
     document.querySelector('.modal-card h2').innerText = "Add Document";
-    document.querySelector('#add-doc-form button[type="submit"]').innerText = "Create Document";
+    const submitBtn = document.querySelector('#add-doc-form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Create Document";
+    }
     document.querySelectorAll('.reveal-step').forEach(el => {
         el.classList.remove('visible');
         el.classList.add('hidden'); // Ensure they are hidden again
@@ -717,15 +763,15 @@ addDocForm?.addEventListener('submit', async (e) => {
         showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
         editingId = null;
         document.querySelector('.modal-card h2').innerText = "Add Document";
-        document.querySelector('#add-doc-form button[type="submit"]').innerText = "Create Document";
         if (charCounter) charCounter.innerText = '0 / 200';
         document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
         document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
         showApp(user);
     } catch (err) {
         showToast(err.message, "error");
+    } finally {
         btn.disabled = false;
-        btn.innerText = "Create Document";
+        btn.innerText = editingId ? "Update Document" : "Create Document";
     }
 });
 

@@ -1074,6 +1074,30 @@ td:nth-last-child(-n+4) {
     margin-bottom: 0.25rem;
 }
 
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.suggestion-chip {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--gray-200);
+}
+
+.suggestion-chip:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
 .iaaf-section {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
