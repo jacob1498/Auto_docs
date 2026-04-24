@@ -710,11 +710,6 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         if (error) throw error;
 
-        // Automatically switch tab based on the selected status so the user sees the change
-        const tabMapping = { 'Submitted': 'submitted', 'Revised': 'returned', 'Completed': 'completed' };
-        currentClientTab = tabMapping[initialStatus] || 'active';
-        currentClientPage = 0;
-
         modalOverlay.classList.add('hidden');
         addDocForm.reset();
         const modalCard = document.querySelector('.modal-card');
@@ -1843,18 +1838,11 @@ window.updateStatus = async (id, status, customMsg = null, extraData = {}) => {
 window.submitToAdmin = async (id) => {
     if (!confirm("Are you sure you want to submit this document for review?")) return;
     
-    // Update the state variables so the dashboard knows to render the 'submitted' tab
-    // and reset the page index to 0.
-    currentClientTab = 'submitted';
-    currentClientPage = 0;
-
     await updateStatus(id, 'Submitted', 'Successfully submitted to Admin!');
 };
 
 window.receiveDocument = async (id) => {
     if (!confirm("Mark this document as Completed?")) return;
-    currentAdminTab = 'completed'; // Switch UI tab before update triggers re-render
-    currentAdminPage = 0; // Reset to first page
     await updateStatus(id, 'Completed');
 };
 
