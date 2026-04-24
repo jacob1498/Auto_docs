@@ -1216,8 +1216,21 @@ async function renderReportsView() {
 
     // 3. Most Common Subjects
     const titleCounts = docs.reduce((acc, d) => {
-        const t = d.title || 'Untitled';
-        acc[t] = (acc[t] || 0) + 1;
+        // Normalize title to group similar subjects (avoiding splits by case, owner names, or punctuation)
+        let t = (d.title || 'Untitled').toLowerCase().trim();
+        
+        // Remove owner names if they are part of the subject line to prevent splitting by person
+        const owners = ['jaime', 'darwin', 'dj', 'abi', 'marie', 'jhing', 'maria', 'nicole'];
+        owners.forEach(o => t = t.replace(new RegExp(`\\b${o}\\b`, 'g'), ''));
+
+        // Clean punctuation and extract significant keywords (first 3 words longer than 1 character)
+        const words = t.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 1 && !['for', 'the', 'and', 'with'].includes(w));
+        
+        // Form a standardized keyword phrase (Title-Cased) for the chart display
+        const keyword = words.slice(0, 3).join(' ');
+        const displayTitle = keyword ? keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Standard Record';
+
+        acc[displayTitle] = (acc[displayTitle] || 0) + 1;
         return acc;
     }, {});
 
