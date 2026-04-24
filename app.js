@@ -1167,7 +1167,7 @@ async function updateStatsDashboard() {
 async function renderReportsView() {
     const { data: docs, error } = await supabaseClient
         .from('documents') // This still fetches all documents for reports, consider aggregate queries for large datasets
-        .select('category, status, created_at, period');
+        .select('title, category, status, created_at, period');
     
     if (error || !docs) return;
 
@@ -1214,7 +1214,55 @@ async function renderReportsView() {
         </div>
     `;
 
-    // 3. Monthly Summary Table
+    // 3. Most Common Subjects
+    const titleCounts = docs.reduce((acc, d) => {
+        const t = d.title || 'Untitled';
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sortedTitles = Object.entries(titleCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5); // Show top 5
+
+    const maxSubjectFreq = sortedTitles.length > 0 ? sortedTitles[0][1] : 1;
+    const subjectChart = document.getElementById('subject-frequency-chart');
+    if (subjectChart) {
+        subjectChart.innerHTML = sortedTitles.map(([title, count]) => `
+            <div class="chart-row" title="${title}">
+                <span class="chart-label" style="width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem;">${title}</span>
+                <div class="chart-track"><div class="chart-fill" style="width: ${(count/maxSubjectFreq)*100}%; background: var(--accent);"></div></div>
+                <span class="chart-label" style="text-align:left; width: 30px;">${count}</span>
+            </div>
+        `).join('') || '<p style="color:var(--gray-400); font-size:0.8rem; padding: 1rem 0;">No recurring subjects found.</p>';
+    }
+
+    // 4. Daily Document Volume (Trend for the last 7 days with data)
+    const dailyCounts = docs.reduce((acc, d) => {
+        const dateKey = new Date(d.created_at).toISOString().split('T')[0];
+        acc[dateKey] = (acc[dateKey] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sortedDateKeys = Object.keys(dailyCounts).sort().slice(-7);
+    const maxDailyCount = sortedDateKeys.length > 0 ? Math.max(...sortedDateKeys.map(k => dailyCounts[k])) : 1;
+    
+    const dailyChart = document.getElementById('daily-volume-chart');
+    if (dailyChart) {
+        dailyChart.innerHTML = sortedDateKeys.map(key => {
+            const count = dailyCounts[key];
+            const displayDate = new Date(key).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `
+                <div class="chart-row">
+                    <span class="chart-label" style="width: 70px;">${displayDate}</span>
+                    <div class="chart-track"><div class="chart-fill" style="width: ${(count/maxDailyCount)*100}%; background: var(--info);"></div></div>
+                    <span class="chart-label" style="text-align:left; width: 30px;">${count}</span>
+                </div>
+            `;
+        }).join('') || '<p style="color:var(--gray-400); font-size:0.8rem; padding: 1rem 0;">No daily trend data found.</p>';
+    }
+
+    // 5. Monthly Summary Table
     const monthlyTableBody = document.querySelector('#monthly-summary-table tbody');
     const monthlyGroups = docs.reduce((acc, d) => {
         const month = d.period || 'Unknown';
