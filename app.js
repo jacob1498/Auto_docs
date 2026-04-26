@@ -489,27 +489,45 @@ reasonCodeSelect?.addEventListener('change', (e) => {
     reasonDescInput.value = REASON_DESC_MAP[e.target.value] || '';
 });
 
-// Progressive Disclosure Logic
+/**
+ * Progressive Disclosure Logic
+ * Ensures steps are shown only when prerequisites are met.
+ */
 function checkDisclosure() {
     const category = categorySelect.value;
     const owner = ownerSelect.value;
     const date = dateInput.value;
     const control = controlNoInput.value;
+    const title = docTitleInput.value;
 
-    // Reveal Date if Category and Owner are selected
-    if (category && owner) {
-        document.getElementById('step-date').classList.add('visible');
-        if (category === 'IAAF') document.getElementById('step-control').classList.add('visible');
+    const stepDate = document.getElementById('step-date');
+    const stepControl = document.getElementById('step-control');
+    const stepSubject = document.getElementById('step-subject');
+    const stepIaaf = document.getElementById('step-iaaf');
+
+    const isIAAF = category === 'IAAF';
+
+    // Step 2: Date depends on Category and Owner being selected
+    const hasBase = !!(category && owner);
+    stepDate?.classList.toggle('visible', hasBase);
+
+    // Step 2b: Control Number (IAAF only)
+    const showControl = hasBase && isIAAF;
+    if (stepControl) {
+        stepControl.classList.toggle('visible', showControl);
+        if (showControl) stepControl.classList.remove('hidden');
     }
 
-    // Reveal Subject if Date is picked (and control if IAAF)
-    if (date && (category !== 'IAAF' || control.length === 4)) {
-        document.getElementById('step-subject').classList.add('visible');
-    }
+    // Step 3: Subject depends on Date being selected (and Control No if IAAF)
+    const controlReady = !isIAAF || (control && control.length === 4);
+    const hasStep2 = hasBase && !!date && controlReady;
+    stepSubject?.classList.toggle('visible', hasStep2);
 
-    // Reveal IAAF details if category is IAAF and subject has content
-    if (category === 'IAAF' && docTitleInput.value.length > 5) {
-        document.getElementById('step-iaaf').classList.add('visible');
+    // Step 4: IAAF Details depends on Subject having content
+    const hasStep3 = hasStep2 && isIAAF && title.length > 5;
+    if (stepIaaf) {
+        stepIaaf.classList.toggle('visible', hasStep3);
+        if (hasStep3) stepIaaf.classList.remove('hidden');
     }
 }
 
@@ -559,6 +577,26 @@ dateInput?.addEventListener('change', checkDisclosure);
 docTitleInput?.addEventListener('input', checkDisclosure);
 controlNoInput?.addEventListener('input', checkDisclosure);
 
+function resetModalState() {
+    if (addDocForm) addDocForm.reset();
+    const modalCard = document.querySelector('.modal-card');
+    if (modalCard) modalCard.classList.remove('modal-wide');
+    if (charCounter) charCounter.innerText = '0 / 200';
+    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
+    
+    editingId = null;
+    const modalTitle = document.querySelector('.modal-card h2');
+    if (modalTitle) modalTitle.innerText = "Add Document";
+    
+    const submitBtn = document.querySelector('#add-doc-form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Create Document";
+    }
+    
+    document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible'));
+}
+
 // Helper to calculate Period and ISO Week
 const updateTrackingFields = (dateVal) => {
     const periodInput = document.getElementById('doc-period');
@@ -602,6 +640,7 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('opt-add-doc')?.addEventListener('click', () => {
     fabContainer.classList.remove('active');
+    resetModalState();
     modalOverlay.classList.remove('hidden');
     docTitleInput.focus();
     
@@ -621,24 +660,7 @@ document.getElementById('opt-upload-details')?.addEventListener('click', () => {
 
 document.getElementById('close-modal')?.addEventListener('click', () => {
     modalOverlay.classList.add('hidden');
-    addDocForm.reset();
-    const modalCard = document.querySelector('.modal-card');
-    if (modalCard) modalCard.classList.remove('modal-wide');
-    if (charCounter) charCounter.innerText = '0 / 200';
-    document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
-    // Reset disclosure
-    editingId = null;
-    document.querySelector('.modal-card h2').innerText = "Add Document";
-    const submitBtn = document.querySelector('#add-doc-form button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "Create Document";
-    }
-    document.querySelectorAll('.reveal-step').forEach(el => {
-        el.classList.remove('visible');
-        el.classList.add('hidden'); // Ensure they are hidden again
-    });
-    document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible'));
+    resetModalState();
 });
 
 // Return Reason Modal Logic
@@ -786,15 +808,8 @@ addDocForm?.addEventListener('submit', async (e) => {
         if (error) throw error;
 
         modalOverlay.classList.add('hidden');
-        addDocForm.reset();
-        const modalCard = document.querySelector('.modal-card');
-        if (modalCard) modalCard.classList.remove('modal-wide');
         showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
-        editingId = null;
-        document.querySelector('.modal-card h2').innerText = "Add Document";
-        if (charCounter) charCounter.innerText = '0 / 200';
-        document.querySelectorAll('.reveal-step').forEach(el => el.classList.remove('visible')); // Reset disclosure
-        document.querySelectorAll('.iaaf-only').forEach(el => el.classList.add('hidden'));
+        resetModalState();
         showApp(user);
     } catch (err) {
         showToast(err.message, "error");
@@ -847,10 +862,7 @@ window.editDocument = async (id) => {
     }
 
     updateTrackingFields(doc.doc_date);
-    document.querySelectorAll('.reveal-step').forEach(el => {
-        el.classList.add('visible');
-        el.classList.remove('hidden');
-    });
+    checkDisclosure(); // Dynamically show fields based on loaded data
 
     document.querySelector('.modal-card h2').innerText = "Edit Document";
     document.querySelector('#add-doc-form button[type="submit"]').innerText = "Update Document";
