@@ -381,6 +381,12 @@ input:focus, select:focus {
     padding-left: calc(2rem - 4px);
 }
 
+.sub-nav-item {
+    padding-left: 3.5rem !important;
+    font-size: 0.85rem !important;
+    opacity: 0.9;
+}
+
 .sidebar-user {
     padding: 2rem;
     border-top: 1px solid var(--gray-100);
@@ -420,6 +426,28 @@ input:focus, select:focus {
     border: 1px solid var(--gray-200);
     max-height: 70vh; /* Limits height for sticky header effect */
     position: relative;
+}
+
+.excel-table-container {
+    max-height: 580px !important; /* Approximately 15 rows height */
+    border: 1px solid var(--gray-200);
+}
+
+#details-excel-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#details-excel-table th, 
+#details-excel-table td {
+    white-space: nowrap;
+    border-right: 1px solid var(--gray-100);
+    min-width: 120px;
+}
+
+#details-excel-table th {
+    background-color: var(--gray-100);
+    border-bottom: 2px solid var(--gray-200);
 }
 
 table {

@@ -65,6 +65,10 @@
                     <span class="material-symbols-outlined">description</span>
                     My Documents
                 </a>
+                <a href="#" class="nav-item sub-nav-item" id="nav-doc-details">
+                    <span class="material-symbols-outlined">table_rows</span>
+                    Document Details
+                </a>
                 <a href="#" class="nav-item" id="nav-reports">
                     <span class="material-symbols-outlined">analytics</span>
                     Reports
@@ -289,6 +293,52 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- Document Details (Excel View) -->
+                <section id="doc-details-view" class="role-view hidden">
+                    <div class="view-header">
+                        <h1>Document Details</h1>
+                        <p>Comprehensive tabular view of all document metrics.</p>
+                    </div>
+                    <div class="table-container excel-table-container">
+                        <table id="details-excel-table">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Week</th>
+                                    <th>Date Created</th>
+                                    <th>Time Created</th>
+                                    <th>Control Number (IAAF)</th>
+                                    <th>Control Number (IR)</th>
+                                    <th>DC Code</th>
+                                    <th>SKU Code</th>
+                                    <th>Description</th>
+                                    <th>Qty</th>
+                                    <th>Unit Cost</th>
+                                    <th>Total Unit Cost</th>
+                                    <th>Retail Cost</th>
+                                    <th>Total Retail Cost</th>
+                                    <th>Adj Type</th>
+                                    <th>Adj Code</th>
+                                    <th>Adj Description</th>
+                                    <th>Reason / Subject</th>
+                                    <th>Status</th>
+                                    <th>Wins Status</th>
+                                    <th>Final Status</th>
+                                    <th>Created By</th>
+                                    <th>Received By</th>
+                                    <th>Last Update / Date Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="details-excel-tbody">
+                                <!-- Data rows will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer-info">
+                        <span>Showing all records</span>
                     </div>
                 </section>
 

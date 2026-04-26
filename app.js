@@ -123,10 +123,11 @@ window.switchSidebarView = async function(viewName) {
     // Toggle Content Views
     const statsView = document.getElementById('stats-view');
     const reportsView = document.getElementById('reports-view');
+    const detailsView = document.getElementById('doc-details-view');
     const docViews = document.querySelectorAll('.documents-content');
     
     // Hide all views first
-    [statsView, reportsView, settingsView].forEach(v => v?.classList.add('hidden'));
+    [statsView, reportsView, settingsView, detailsView].forEach(v => v?.classList.add('hidden'));
     docViews.forEach(v => v.classList.add('hidden'));
 
     if (viewName === 'dashboard') {
@@ -139,6 +140,9 @@ window.switchSidebarView = async function(viewName) {
     } else if (viewName === 'reports') {
         reportsView.classList.remove('hidden');
         await renderReportsView();
+    } else if (viewName === 'doc-details') {
+        detailsView.classList.remove('hidden');
+        await renderDocDetailsView();
     } else if (viewName === 'documents') {
         // The actual role-based rendering happens in showApp or re-renders
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -159,6 +163,7 @@ window.switchSidebarView = async function(viewName) {
 document.getElementById('nav-dashboard')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('dashboard'); });
 document.getElementById('nav-documents')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('documents'); });
 document.getElementById('nav-reports')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('reports'); });
+document.getElementById('nav-doc-details')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('doc-details'); });
 document.getElementById('nav-settings')?.addEventListener('click', (e) => { e.preventDefault(); switchSidebarView('settings'); });
 
 // Theme Selector Listener
@@ -2024,3 +2029,50 @@ window.setSerialRange = (start) => {
     currentSerialStart = start;
     updateStatsDashboard();
 };
+
+async function renderDocDetailsView() {
+    const tbody = document.getElementById('details-excel-tbody');
+    if (!tbody) return;
+
+    const { data: docs, error } = await supabaseClient
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        showToast("Error fetching details: " + error.message, "error");
+        return;
+    }
+
+    tbody.innerHTML = docs.map(doc => {
+        const dateObj = new Date(doc.created_at);
+        return `
+            <tr>
+                <td>${doc.period || ''}</td>
+                <td>${doc.week || ''}</td>
+                <td>${doc.doc_date || dateObj.toLocaleDateString()}</td>
+                <td>${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                <td>${doc.category === 'IAAF' ? (doc.control_number || '') : ''}</td>
+                <td>${doc.category === 'IR' ? (doc.control_number || '') : ''}</td>
+                <td>—</td> <!-- DC Code Placeholder -->
+                <td>—</td> <!-- SKU Code Placeholder -->
+                <td>${doc.reason_description || 'Standard Document'}</td>
+                <td>1</td> <!-- Qty Placeholder -->
+                <td>—</td> <!-- Unit Cost Placeholder -->
+                <td>—</td> <!-- Total Unit Cost Placeholder -->
+                <td>—</td> <!-- Retail Cost Placeholder -->
+                <td>—</td> <!-- Total Retail Cost Placeholder -->
+                <td>${doc.adj_type || ''}</td>
+                <td>${doc.reason_code || ''}</td>
+                <td>${doc.reason_description || ''}</td>
+                <td>${doc.title}</td>
+                <td><span class="badge ${doc.status}">${doc.status}</span></td>
+                <td>Pending</td> <!-- Wins Status Placeholder -->
+                <td>${doc.status}</td>
+                <td>${doc.owner_name}</td>
+                <td>Admin</td>
+                <td>${new Date(doc.updated_at || doc.created_at).toLocaleString()}</td>
+            </tr>
+        `;
+    }).join('');
+}
