@@ -587,11 +587,24 @@ document.getElementById('doc-date')?.addEventListener('change', (e) => {
     updateTrackingFields(e.target.value);
 });
 
-document.getElementById('upload-trigger')?.addEventListener('click', () => {
+// Multi-Action FAB Logic
+const fabContainer = document.getElementById('fab-container');
+document.getElementById('main-fab')?.addEventListener('click', () => {
+    fabContainer.classList.toggle('active');
+});
+
+// Close FAB when clicking outside
+document.addEventListener('click', (e) => {
+    if (fabContainer && !fabContainer.contains(e.target)) {
+        fabContainer.classList.remove('active');
+    }
+});
+
+document.getElementById('opt-add-doc')?.addEventListener('click', () => {
+    fabContainer.classList.remove('active');
     modalOverlay.classList.remove('hidden');
     docTitleInput.focus();
     
-    // Set default date to today and trigger auto-calc
     const today = new Date().toISOString().split('T')[0];
     if (dateInput) {
         dateInput.value = today;
@@ -599,6 +612,11 @@ document.getElementById('upload-trigger')?.addEventListener('click', () => {
     }
     checkDisclosure();
     loadSubjectSuggestions();
+});
+
+document.getElementById('opt-upload-details')?.addEventListener('click', () => {
+    fabContainer.classList.remove('active');
+    showToast("Bulk upload details functionality coming soon!", "info");
 });
 
 document.getElementById('close-modal')?.addEventListener('click', () => {

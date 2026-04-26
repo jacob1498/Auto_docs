@@ -421,9 +421,25 @@
                     </div>
                 </div>
 
-                <button id="upload-trigger" class="fab" title="Add New Document">
-                    <span class="material-symbols-outlined">add</span>
-                </button>
+                <div class="fab-container" id="fab-container">
+                    <div class="fab-options">
+                        <div class="fab-option" id="opt-upload-details">
+                            <span class="fab-label">Upload Details</span>
+                            <button type="button" class="mini-fab">
+                                <span class="material-symbols-outlined">upload_file</span>
+                            </button>
+                        </div>
+                        <div class="fab-option" id="opt-add-doc">
+                            <span class="fab-label">Add Document</span>
+                            <button type="button" class="mini-fab">
+                                <span class="material-symbols-outlined">description</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="main-fab" class="fab-trigger" title="Actions">
+                        <span class="material-symbols-outlined">add</span>
+                    </button>
+                </div>
                 <div class="table-container">
                     <table id="client-doc-table">
                         <thead>
