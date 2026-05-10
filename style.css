@@ -242,6 +242,17 @@ input:focus, select:focus {
     text-decoration: underline;
 }
 
+.forgot-link {
+    font-size: 0.8125rem;
+    color: var(--primary);
+    cursor: pointer;
+    text-align: right;
+    margin-top: -0.75rem;
+    display: block;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
 /* Dashboard Layout */
 #app-container {
     display: flex;

@@ -562,14 +562,39 @@ async function loadSubjectSuggestions() {
         .slice(0, 5); // Show top 5 suggestions
 
     container.innerHTML = commonTitles.map(title => `
-        <div class="suggestion-chip" onclick="applySuggestion('${title.replace(/'/g, "\\'")}')">${title}</div>
+        <div class="suggestion-chip" onclick="applySuggestion('${title.replace(/'/g, "\\'")}')" title="Auto-fill form from history">${title}</div>
     `).join('');
 }
 
-window.applySuggestion = (text) => {
+window.applySuggestion = async (text) => {
     const input = document.getElementById('doc-title-input');
     input.value = text;
-    input.dispatchEvent(new Event('input')); // Trigger disclosure and char count
+    input.dispatchEvent(new Event('input'));
+
+    // Auto-fill logic: Fetch the most recent document with this title to pre-fill metadata
+    const { data: doc } = await supabaseClient
+        .from('documents')
+        .select('*')
+        .eq('title', text)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (doc) {
+        document.getElementById('doc-category-select').value = doc.category;
+        document.getElementById('doc-owner-name').value = doc.owner_name;
+        categorySelect.dispatchEvent(new Event('change'));
+        
+        if (doc.category === 'IAAF') {
+            document.getElementById('doc-adj-type').value = doc.adj_type || '';
+            document.getElementById('doc-reason-code').value = doc.reason_code || '';
+            document.getElementById('doc-reason-desc').value = doc.reason_description || '';
+            document.getElementById('doc-amount-range').value = doc.amount_range || '';
+            document.getElementById('doc-charge-to').value = doc.charge_to || '';
+        }
+        checkDisclosure();
+        showToast("Form auto-filled from history", "info");
+    }
 };
 
 ownerSelect?.addEventListener('change', checkDisclosure);
@@ -828,8 +853,14 @@ window.deleteDocument = (id) => {
     confirmModal.classList.remove('hidden');
 };
 
-window.editDocument = async (id) => {
-    editingId = id;
+window.cloneDocument = async (id) => {
+    // Reuse edit logic but reset ID to create a new record
+    await window.editDocument(id, true);
+    showToast("Details copied! Please provide a new Control Number if IAAF.", "info");
+};
+
+window.editDocument = async (id, isClone = false) => {
+    editingId = isClone ? null : id;
     const { data: doc, error } = await supabaseClient
         .from('documents')
         .select('*')
@@ -864,8 +895,19 @@ window.editDocument = async (id) => {
     updateTrackingFields(doc.doc_date);
     checkDisclosure(); // Dynamically show fields based on loaded data
 
-    document.querySelector('.modal-card h2').innerText = "Edit Document";
-    document.querySelector('#add-doc-form button[type="submit"]').innerText = "Update Document";
+    const modalTitle = document.querySelector('.modal-card h2');
+    const submitBtn = document.querySelector('#add-doc-form button[type="submit"]');
+
+    if (isClone) {
+        modalTitle.innerText = "Add Document (Duplicate)";
+        submitBtn.innerText = "Create Document";
+        // Control numbers must be unique, so clear it for the clone
+        if (doc.category === 'IAAF') document.getElementById('doc-control-no').value = '';
+    } else {
+        modalTitle.innerText = "Edit Document";
+        submitBtn.innerText = "Update Document";
+    }
+
     modalOverlay.classList.remove('hidden');
 };
 
@@ -931,9 +973,14 @@ document.addEventListener('click', (e) => {
 });
 
 // 1. Auth Listener
-supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (session) {
-        showApp(session.user);
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        await showApp(session.user);
+        await switchSidebarView('settings');
+        openProfileModal();
+        showToast("Recovery mode active. Please update your password below.", "info");
+    } else if (session) {
+        await showApp(session.user);
     } else {
         if (realtimeSubscription) {
             supabaseClient.removeChannel(realtimeSubscription);
@@ -1009,6 +1056,24 @@ signupForm.addEventListener('submit', async (e) => {
         btn.innerText = "Sign Up";
     }
 });
+
+window.handleForgotPassword = async () => {
+    const email = document.getElementById('login-email').value;
+    if (!email) {
+        showToast("Please enter your email address in the login field first.", "error");
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin
+        });
+        if (error) throw error;
+        showToast("Recovery link sent! Please check your email inbox.");
+    } catch (err) {
+        showToast("Failed to send reset link: " + err.message, "error");
+    }
+};
 
 async function updateStatsDashboard() {
     // --- 1. Fetch high-level stats using aggregate queries ---
@@ -1761,6 +1826,9 @@ async function renderAdminDashboard(isSilent = false) {
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td class="col-meta">
                 <div class="action-btns">
+                    <button class="icon-btn" onclick="cloneDocument('${doc.id}')" title="Duplicate">
+                        <span class="material-symbols-outlined">content_copy</span>
+                    </button>
                     <button class="icon-btn" onclick="receiveDocument('${doc.id}')" title="Mark Completed" 
                         ${doc.status === 'Completed' ? 'disabled style="opacity:0.3"' : ''}>
                         <span class="material-symbols-outlined">check_circle</span>
@@ -1904,6 +1972,9 @@ async function renderClientDashboard(userId, isSilent = false) {
             <td class="col-meta"><span class="badge ${agingClass}">${aging} Days</span></td>
             <td class="col-meta">
                 <div class="action-btns">
+                    <button class="icon-btn" onclick="cloneDocument('${doc.id}')" title="Duplicate">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">content_copy</span>
+                    </button>
                     <button class="icon-btn" onclick="editDocument('${doc.id}')" title="Edit" 
                         ${doc.status === 'Submitted' || doc.status === 'Completed' ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
                         <span class="material-symbols-outlined" style="font-size: 1.2rem;">edit</span>
