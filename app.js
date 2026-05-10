@@ -978,6 +978,9 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
         await showApp(session.user);
         await switchSidebarView('settings');
         openProfileModal();
+        setTimeout(() => {
+            document.getElementById('new-password')?.focus();
+        }, 500);
         showToast("Recovery mode active. Please update your password below.", "info");
     } else if (session) {
         await showApp(session.user);
