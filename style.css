@@ -253,6 +253,10 @@ input:focus, select:focus {
     transition: color 0.2s;
 }
 
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
 /* Dashboard Layout */
 #app-container {
     display: flex;
