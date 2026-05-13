@@ -1651,6 +1651,9 @@ async function showApp(user) {
             if (profile && !error) {
                 currentUserRole = profile.role;
                 document.getElementById('header-user-role').innerText = currentUserRole;
+            } else {
+                // Fallback to user_metadata role if profile fetch fails (e.g., RLS issue on profiles table)
+                currentUserRole = user.user_metadata?.role;
             }
         } catch (err) {
             console.warn("Profile table fetch failed, falling back to metadata.", err);
