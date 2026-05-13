@@ -1290,7 +1290,11 @@ async function renderReportsView() {
         .from('documents') // This still fetches all documents for reports, consider aggregate queries for large datasets
         .select('title, category, status, created_at, period');
     // Requires RLS SELECT policy for documents
-    if (error || !docs) return;
+    if (error) {
+        showToast("Error fetching reports data: " + error.message, "error");
+        console.error("Error fetching reports data:", error);
+        return;
+    }
 
     // 1. Category Distribution
     const iaafCount = docs.filter(d => d.category === 'IAAF').length;
@@ -2157,7 +2161,11 @@ async function renderDocDetailsView() {
         .select('*')
         .order('created_at', { ascending: false });
 
-    if (error) {
+    if (error) { // Requires RLS SELECT policy for documents
+        const tbody = document.getElementById('details-excel-tbody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="24" style="text-align:center; color: #e11d48; padding: 2rem;">
+            <strong>Error:</strong> ${error.message}. Please check RLS policies for 'documents' table.
+        </td></tr>`;
         showToast("Error fetching details: " + error.message, "error");
         return;
     }
