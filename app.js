@@ -216,7 +216,7 @@ document.getElementById('password-form')?.addEventListener('submit', async (e) =
         const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
         if (error) throw error;
         showToast("Password updated successfully!");
-        e.target.reset();
+        e.target.reset(); // Clear form fields after successful update
     } catch (err) {
         showToast("Error updating password: " + err.message, "error");
     } finally {
@@ -289,7 +289,7 @@ document.getElementById('avatar-input')?.addEventListener('change', async (e) =>
         const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
 
         const { error: updateError } = await supabaseClient
-            .from('profiles')
+            .from('profiles') // Ensure 'profiles' table has RLS policies for UPDATE
             .upsert({ 
                 id: user.id, 
                 avatar_url: publicUrl, 
@@ -765,7 +765,7 @@ addDocForm?.addEventListener('submit', async (e) => {
     btn.innerHTML = '<div class="spinner"></div> Creating...';
 
     try {
-        // Check for duplicate control number if category is IAAF
+        // Check for duplicate control number if category is IAAF (requires RLS SELECT policy)
         if (category === 'IAAF') {
             let dupQuery = supabaseClient
                 .from('documents')
@@ -819,13 +819,13 @@ addDocForm?.addEventListener('submit', async (e) => {
         let error;
         if (editingId) {
             const { error: updateError } = await supabaseClient
-                .from('documents')
+                .from('documents') // Requires RLS UPDATE policy
                 .update(insertData)
                 .eq('id', editingId);
             error = updateError;
         } else {
             const { error: insertError } = await supabaseClient
-                .from('documents')
+                .from('documents') // Requires RLS INSERT policy
                 .insert([insertData]);
             error = insertError;
         }
@@ -834,7 +834,12 @@ addDocForm?.addEventListener('submit', async (e) => {
 
         modalOverlay.classList.add('hidden');
         showToast(editingId ? "Document updated successfully!" : "Document added successfully!");
-        resetModalState();
+        resetModalState(); // Reset form and state after successful operation
+        
+        // Force a full re-render to ensure all dashboards and lists are updated
+        // This is a bit heavy-handed but ensures consistency after a CUD operation.
+        // For more granular updates, you'd update specific parts of the UI.
+        // The realtime subscription should also trigger this, but a direct call is safer for immediate feedback.
         showApp(user);
     } catch (err) {
         showToast(err.message, "error");
@@ -925,7 +930,7 @@ document.getElementById('confirm-delete-btn')?.addEventListener('click', async (
 
     try {
         const { error } = await supabaseClient
-            .from('documents')
+            .from('documents') // Requires RLS DELETE policy
             .delete()
             .eq('id', documentIdToDelete);
         
@@ -934,7 +939,10 @@ document.getElementById('confirm-delete-btn')?.addEventListener('click', async (
         confirmModal.classList.add('hidden');
         showToast("Document deleted successfully");
         const { data: { user } } = await supabaseClient.auth.getUser();
-        showApp(user);
+        // Re-render the appropriate dashboard after deletion
+        if (currentUserRole === 'admin') await renderAdminDashboard();
+        else await renderClientDashboard(user.id);
+        if (currentSidebarView === 'dashboard') await updateStatsDashboard();
     } catch (err) {
         showToast("Error deleting document: " + err.message, "error");
     } finally {
@@ -1075,7 +1083,7 @@ window.handleForgotPassword = async () => {
         showToast("Recovery link sent! Please check your email inbox.");
     } catch (err) {
         showToast("Failed to send reset link: " + err.message, "error");
-    }
+    } // Add a finally block if you have a spinner for this action
 };
 
 async function updateStatsDashboard() {
@@ -1086,7 +1094,11 @@ async function updateStatsDashboard() {
     const { count: completedCount, error: completedError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Completed');
     const { count: cancelledCount, error: cancelledError } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'Cancelled');
 
-    if (totalError || submittedError || returnedError || completedError || cancelledError) {
+    // Centralized error handling for dashboard stats
+    const errors = [totalError, submittedError, returnedError, completedError, cancelledError].filter(Boolean);
+    if (errors.length > 0) {
+        showToast("Error fetching dashboard stats. Check RLS policies or console for details.", "error");
+        // Log all errors for debugging
         console.error("Error fetching dashboard stats:", totalError || submittedError || returnedError || completedError || cancelledError);
         return;
     }
@@ -1110,7 +1122,7 @@ async function updateStatsDashboard() {
         .from('documents')
         .select('status, owner_name, created_at, doc_date, control_number, category, title'); // Only fetch necessary columns
 
-    if (adminDocsError) {
+    if (adminDocsError) { // Requires RLS SELECT policy for documents
         console.error("Error fetching admin dashboard documents:", adminDocsError);
         return;
     }
@@ -1277,7 +1289,7 @@ async function renderReportsView() {
     const { data: docs, error } = await supabaseClient
         .from('documents') // This still fetches all documents for reports, consider aggregate queries for large datasets
         .select('title, category, status, created_at, period');
-    
+    // Requires RLS SELECT policy for documents
     if (error || !docs) return;
 
     // 1. Category Distribution
@@ -1429,7 +1441,7 @@ async function renderProfileView(passedUser = null) {
     document.getElementById('profile-role-display').innerText = role;
 
     const { data: profile } = await supabaseClient
-        .from('profiles')
+        .from('profiles') // Requires RLS SELECT policy for profiles
         .select('full_name, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
@@ -1471,7 +1483,7 @@ async function updateProfile() {
     btn.innerHTML = '<div class="spinner"></div> Saving...';
 
     try {
-        const { error } = await supabaseClient
+        const { error } = await supabaseClient // Requires RLS UPDATE policy for profiles
             .from('profiles')
             .upsert({ 
                 id: user.id, 
@@ -1543,7 +1555,7 @@ window.exportRawDataToCSV = async () => {
     if (startDate) query = query.gte('doc_date', startDate);
     if (endDate) query = query.lte('doc_date', endDate);
 
-    const { data: docs, error } = await query.order('created_at', { ascending: false });
+    const { data: docs, error } = await query.order('created_at', { ascending: false }); // Requires RLS SELECT policy for documents
 
     if (error || !docs || docs.length === 0) {
         alert("No document data found to export.");
@@ -1629,7 +1641,7 @@ async function showApp(user) {
             const { data: profile, error } = await supabaseClient
                 .from('profiles')
                 .select('role')
-                .eq('id', user.id)
+                .eq('id', user.id) // Requires RLS SELECT policy for profiles
                 .maybeSingle();
             
             if (profile && !error) {
@@ -1684,14 +1696,14 @@ async function renderAdminDashboard(isSilent = false) {
     if (!isSilent && topLoader) topLoader.classList.add('loading');
     
     const tbody = document.querySelector('#admin-doc-table tbody');
-    // Only show loading state if not a silent background refresh
+    // Only show loading state if not a silent background refresh or if the table is currently empty
     if (!isSilent) {
         tbody.innerHTML = `
         <tr>
             <td colspan="9">
                 <div class="table-loader-content">
                     <div class="spinner spinner-dark"></div>
-                    <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Fetching records...</span>
+                    <span style="font-size: 0.875rem; color: var(--gray-600); font-weight: 500;">Fetching admin records...</span>
                 </div>
             </td>
         </tr>`;
@@ -1760,7 +1772,7 @@ async function renderAdminDashboard(isSilent = false) {
     const from = currentAdminPage * PAGE_SIZE; // Pagination
     const to = from + PAGE_SIZE - 1;
 
-    const { data: docs, error, count } = await query
+    const { data: docs, error, count } = await query // Requires RLS SELECT policy for documents
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -1770,7 +1782,7 @@ async function renderAdminDashboard(isSilent = false) {
         console.error("Admin Fetch Error:", error.message);
         const tbody = document.querySelector('#admin-doc-table tbody');
         let errorMsg = error.message;
-        if (errorMsg.includes("infinite recursion")) {
+        if (errorMsg.includes("infinite recursion") || errorMsg.includes("permission denied")) { // Added permission denied check
             errorMsg = "Security Policy Error: Infinite recursion detected. Please update RLS policies.";
         } else if (errorMsg.includes("more than one relationship")) {
             errorMsg = "Database Relationship Error: Multiple paths to Profiles table found.";
@@ -1933,7 +1945,7 @@ async function renderClientDashboard(userId, isSilent = false) {
     const from = currentClientPage * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data: docs, error, count } = await query
+    const { data: docs, error, count } = await query // Requires RLS SELECT policy for documents
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -1942,7 +1954,9 @@ async function renderClientDashboard(userId, isSilent = false) {
     if (error) {
         console.error("Client Fetch Error:", error.message);
         let errorMsg = error.message;
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
+        if (errorMsg.includes("permission denied")) { // Added permission denied check
+            errorMsg = "Permission Denied. Please check RLS policies for your documents.";
+        }        container.innerHTML = `<tr><td colspan="9" style="text-align:center; color: #e11d48; padding: 1rem;">Error: ${errorMsg}</td></tr>`;
         return;
     }
 
@@ -2060,7 +2074,7 @@ window.updateStatus = async (id, status, customMsg = null, extraData = {}) => {
             ...extraData 
         };
         const { error: updateError } = await supabaseClient
-            .from('documents')
+            .from('documents') // Requires RLS UPDATE policy
             .update(updatePayload)
             .eq('id', id);
         
@@ -2139,7 +2153,7 @@ async function renderDocDetailsView() {
     if (!tbody) return;
 
     const { data: docs, error } = await supabaseClient
-        .from('documents')
+        .from('documents') // Requires RLS SELECT policy for documents
         .select('*')
         .order('created_at', { ascending: false });
 
